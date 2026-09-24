@@ -1,0 +1,7 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # Informational in this project — the screens are ported layouts and some
+    # widgets are intentionally non-const to keep the token classes readable.
+    prefer_const_constructors: info

@@ -1,0 +1,16 @@
+export const moduleItems = [
+  { label: "Appointment", icon: "appointment", tone: "coral" },
+  { label: "Doctor", icon: "doctor", tone: "coral" },
+  { label: "Pathology", icon: "pathology", tone: "coral" },
+  { label: "Radiology", icon: "radiology", tone: "magenta" },
+  { label: "Blood", icon: "blood", tone: "coral" },
+  { label: "Pharmacy Sales", icon: "pharmacy", tone: "amber" },
+  { label: "Medicine", icon: "medicine", tone: "cyan" },
+  { label: "Finance", icon: "finance", tone: "slate" },
+  { label: "Reports", icon: "reports", tone: "coral" },
+  { label: "Bed", icon: "bed", tone: "slate" },
+  { label: "Ambulance", icon: "ambulance", tone: "orange" },
+  { label: "OPD", icon: "opd", tone: "blue" },
+  { label: "IPD", icon: "ipd", tone: "mint" },
+  { label: "Patient", icon: "patient", tone: "coral" },
+];

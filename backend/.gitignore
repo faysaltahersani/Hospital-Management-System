@@ -1,0 +1,23 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+.DS_Store
+.idea/
+.vscode/
+coverage/
+dist/
+uploads/
+
+# Claude Code local session files
+.claude/
+
+# Medical file storage — patient images, original files and generated report PDFs.
+# Never committed: this is patient data, and it is served only through the
+# authorised diagnostics download endpoint.
+storage/

@@ -1,0 +1,29 @@
+# Dependencies and build output
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+**/coverage/
+
+# Local environment and secrets
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Runtime and patient-upload data
+**/logs/
+**/uploads/
+**/storage/
+*.log
+
+# Local database dumps containing live/private records
+**/hospital_management.sql
+**/*backup*.sql
+**/*dump*.sql
+
+# IDE / OS
+**/.idea/
+**/.vscode/
+**/.claude/
+.DS_Store
+Thumbs.db

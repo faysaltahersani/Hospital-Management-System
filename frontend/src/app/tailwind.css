@@ -1,0 +1,35 @@
+@import "tailwindcss";
+@source "../**/*.{js,jsx}";
+
+@layer base {
+  :root {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: #0f172a;
+    background:
+      radial-gradient(circle at top left, rgba(18, 141, 143, 0.16), transparent 24%),
+      linear-gradient(180deg, #edf6f5 0%, #f7fbfb 42%, #eef5f7 100%);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background:
+      radial-gradient(circle at top left, rgba(18, 141, 143, 0.16), transparent 24%),
+      linear-gradient(180deg, #edf6f5 0%, #f7fbfb 42%, #eef5f7 100%);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}

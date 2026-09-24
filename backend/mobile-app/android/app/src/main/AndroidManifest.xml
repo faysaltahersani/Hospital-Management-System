@@ -1,0 +1,43 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required by lib/data/api/api_client.dart when running against the live
+         HMS backend. Harmless in mock mode. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:label="E-Medical"
+        android:name="${applicationName}"
+        android:icon="@drawable/app_icon"
+        android:enableOnBackInvokedCallback="true"
+        android:usesCleartextTraffic="true">
+        <!-- usesCleartextTraffic: the HMS backend is served over plain http on
+             port 5000. Remove this once the API is behind TLS. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+    </queries>
+</manifest>

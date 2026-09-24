@@ -1,0 +1,251 @@
+
+✅ Total API Endpoints: 174
+1. Health — 1
+GET /api/v1/health
+2. Auth — 6
+POST /api/v1/auth/login
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
+POST /api/v1/auth/register
+GET  /api/v1/auth/me
+POST /api/v1/auth/change-password
+3. Users — 5
+GET    /api/v1/users
+GET    /api/v1/users/:id
+POST   /api/v1/users
+PATCH  /api/v1/users/:id
+DELETE /api/v1/users/:id
+4. Departments — 5
+GET    /api/v1/departments
+GET    /api/v1/departments/:id
+POST   /api/v1/departments
+PATCH  /api/v1/departments/:id
+DELETE /api/v1/departments/:id
+5. Patients — 6
+GET    /api/v1/patients
+GET    /api/v1/patients/:id
+GET    /api/v1/patients/:id/timeline
+POST   /api/v1/patients
+PATCH  /api/v1/patients/:id
+DELETE /api/v1/patients/:id
+6. Doctors — 6
+GET    /api/v1/doctors
+GET    /api/v1/doctors/:id
+GET    /api/v1/doctors/:id/available-slots
+POST   /api/v1/doctors
+PATCH  /api/v1/doctors/:id
+DELETE /api/v1/doctors/:id
+7. Appointments — 6
+GET    /api/v1/appointments
+GET    /api/v1/appointments/:id
+POST   /api/v1/appointments
+PATCH  /api/v1/appointments/:id
+PATCH  /api/v1/appointments/:id/status
+DELETE /api/v1/appointments/:id
+8. Beds — 11
+GET    /api/v1/beds/wards
+GET    /api/v1/beds/wards/:id
+POST   /api/v1/beds/wards
+PATCH  /api/v1/beds/wards/:id
+DELETE /api/v1/beds/wards/:id
+
+GET    /api/v1/beds/summary
+GET    /api/v1/beds
+GET    /api/v1/beds/:id
+POST   /api/v1/beds
+PATCH  /api/v1/beds/:id
+DELETE /api/v1/beds/:id
+9. IPD — 8
+GET    /api/v1/ipd
+GET    /api/v1/ipd/:id
+GET    /api/v1/ipd/:id/discharge-summary
+POST   /api/v1/ipd
+PATCH  /api/v1/ipd/:id
+PATCH  /api/v1/ipd/:id/transfer-bed
+PATCH  /api/v1/ipd/:id/discharge
+DELETE /api/v1/ipd/:id
+10. OPD — 7
+GET    /api/v1/opd
+GET    /api/v1/opd/:id
+POST   /api/v1/opd
+PATCH  /api/v1/opd/:id
+PATCH  /api/v1/opd/:id/complete
+PATCH  /api/v1/opd/:id/cancel
+DELETE /api/v1/opd/:id
+11. Pharmacy — 11
+GET    /api/v1/pharmacy/medicines
+GET    /api/v1/pharmacy/medicines/:id
+POST   /api/v1/pharmacy/medicines
+PATCH  /api/v1/pharmacy/medicines/:id
+DELETE /api/v1/pharmacy/medicines/:id
+POST   /api/v1/pharmacy/medicines/:id/stock-adjustments
+
+GET    /api/v1/pharmacy/sales
+GET    /api/v1/pharmacy/sales/:id
+POST   /api/v1/pharmacy/sales
+PATCH  /api/v1/pharmacy/sales/:id/status
+DELETE /api/v1/pharmacy/sales/:id
+12. Prescriptions — 6
+GET    /api/v1/prescriptions
+GET    /api/v1/prescriptions/:id
+POST   /api/v1/prescriptions
+PATCH  /api/v1/prescriptions/:id
+PATCH  /api/v1/prescriptions/:id/status
+DELETE /api/v1/prescriptions/:id
+13. Laboratory — 12
+GET    /api/v1/laboratory/tests
+GET    /api/v1/laboratory/tests/:id
+POST   /api/v1/laboratory/tests
+PATCH  /api/v1/laboratory/tests/:id
+DELETE /api/v1/laboratory/tests/:id
+
+GET    /api/v1/laboratory/orders
+GET    /api/v1/laboratory/orders/:id
+GET    /api/v1/laboratory/orders/:id/report
+POST   /api/v1/laboratory/orders
+PATCH  /api/v1/laboratory/orders/:id/status
+PATCH  /api/v1/laboratory/orders/:id/items/:itemId/result
+DELETE /api/v1/laboratory/orders/:id
+14. Radiology — 12
+GET    /api/v1/radiology/tests
+GET    /api/v1/radiology/tests/:id
+POST   /api/v1/radiology/tests
+PATCH  /api/v1/radiology/tests/:id
+DELETE /api/v1/radiology/tests/:id
+
+GET    /api/v1/radiology/orders
+GET    /api/v1/radiology/orders/:id
+GET    /api/v1/radiology/orders/:id/report
+POST   /api/v1/radiology/orders
+PATCH  /api/v1/radiology/orders/:id/status
+PATCH  /api/v1/radiology/orders/:id/result
+DELETE /api/v1/radiology/orders/:id
+15. Billing — 20
+GET    /api/v1/billing/invoices
+GET    /api/v1/billing/invoices/:id
+GET    /api/v1/billing/invoices/:id/print
+POST   /api/v1/billing/invoices
+PATCH  /api/v1/billing/invoices/:id
+DELETE /api/v1/billing/invoices/:id
+
+GET    /api/v1/billing/payments
+GET    /api/v1/billing/payments/:id
+POST   /api/v1/billing/payments
+DELETE /api/v1/billing/payments/:id
+
+GET    /api/v1/billing/expense-categories
+POST   /api/v1/billing/expense-categories
+PATCH  /api/v1/billing/expense-categories/:id
+DELETE /api/v1/billing/expense-categories/:id
+
+GET    /api/v1/billing/expenses
+GET    /api/v1/billing/expenses/:id
+POST   /api/v1/billing/expenses
+PATCH  /api/v1/billing/expenses/:id
+DELETE /api/v1/billing/expenses/:id
+16. Ambulance — 12
+GET    /api/v1/ambulance
+GET    /api/v1/ambulance/:id
+POST   /api/v1/ambulance
+PATCH  /api/v1/ambulance/:id
+DELETE /api/v1/ambulance/:id
+
+GET    /api/v1/ambulance/trips/list
+GET    /api/v1/ambulance/trips/:id
+POST   /api/v1/ambulance/trips
+PATCH  /api/v1/ambulance/trips/:id
+PATCH  /api/v1/ambulance/trips/:id/complete
+PATCH  /api/v1/ambulance/trips/:id/cancel
+DELETE /api/v1/ambulance/trips/:id
+17. Blood Bank — 13
+GET    /api/v1/blood-bank/donors
+GET    /api/v1/blood-bank/donors/:id
+POST   /api/v1/blood-bank/donors
+PATCH  /api/v1/blood-bank/donors/:id
+DELETE /api/v1/blood-bank/donors/:id
+
+GET    /api/v1/blood-bank/bags/summary
+GET    /api/v1/blood-bank/bags
+GET    /api/v1/blood-bank/bags/:id
+POST   /api/v1/blood-bank/bags
+PATCH  /api/v1/blood-bank/bags/:id
+DELETE /api/v1/blood-bank/bags/:id
+
+GET    /api/v1/blood-bank/issues
+GET    /api/v1/blood-bank/issues/:id
+POST   /api/v1/blood-bank/issues
+DELETE /api/v1/blood-bank/issues/:id
+18. Referrals — 6
+GET    /api/v1/referrals
+GET    /api/v1/referrals/:id
+POST   /api/v1/referrals
+PATCH  /api/v1/referrals/:id
+PATCH  /api/v1/referrals/:id/status
+DELETE /api/v1/referrals/:id
+19. HR — 13
+GET    /api/v1/hr/employees
+GET    /api/v1/hr/employees/:id
+POST   /api/v1/hr/employees
+PATCH  /api/v1/hr/employees/:id
+DELETE /api/v1/hr/employees/:id
+
+GET    /api/v1/hr/attendance
+POST   /api/v1/hr/attendance
+PATCH  /api/v1/hr/attendance/:id
+DELETE /api/v1/hr/attendance/:id
+
+GET    /api/v1/hr/payrolls
+GET    /api/v1/hr/payrolls/:id
+POST   /api/v1/hr/payrolls
+PATCH  /api/v1/hr/payrolls/:id
+DELETE /api/v1/hr/payrolls/:id
+20. Settings — 11
+GET    /api/v1/settings/public
+
+GET    /api/v1/settings/master-options
+GET    /api/v1/settings/master-options/:id
+POST   /api/v1/settings/master-options
+PATCH  /api/v1/settings/master-options/:id
+DELETE /api/v1/settings/master-options/:id
+
+GET    /api/v1/settings
+GET    /api/v1/settings/:id
+POST   /api/v1/settings
+PATCH  /api/v1/settings/:id
+DELETE /api/v1/settings/:id
+21. Audit Logs — 3
+GET    /api/v1/audit-logs
+GET    /api/v1/audit-logs/:id
+DELETE /api/v1/audit-logs/:id
+22. Reports — 6
+GET /api/v1/reports/dashboard
+GET /api/v1/reports/appointments
+GET /api/v1/reports/finance
+GET /api/v1/reports/bed-occupancy
+GET /api/v1/reports/blood-stock
+GET /api/v1/reports/pharmacy-stock
+📊 Module-wise Count Summary
+Module	Endpoints
+Health	1
+Auth	6
+Users	5
+Departments	5
+Patients	6
+Doctors	6
+Appointments	6
+Beds	11
+IPD	8
+OPD	7
+Pharmacy	11
+Prescriptions	6
+Laboratory	12
+Radiology	12
+Billing	20
+Ambulance	12
+Blood Bank	13
+Referrals	6
+HR	13
+Settings	11
+Audit Logs	3
+Reports	6
+Total	174

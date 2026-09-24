@@ -1,0 +1,57 @@
+name: emedical_app
+description: "E-Medical — mobile companion app for the Hospital Management System."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  # Dart 3.4 ships with Flutter 3.22, the minimum this project targets
+  # (PopScope.onPopInvokedWithResult is used by the tab shells).
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # State management for the repository/session layer.
+  provider: ^6.1.2
+  # Used by lib/data/api/api_client.dart when AppConfig.dataSource == live.
+  http: ^1.2.2
+  pdf: ^3.13.0
+  printing: ^5.15.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  # The mockup uses Fraunces (headings), Space Grotesk (labels) and Inter (body).
+  # The app runs fine without them — theme falls back to serif/sans-serif system
+  # fonts. To get the exact look, drop the TTFs into assets/fonts/ and uncomment.
+  # See README.md → "Bundling the display fonts".
+  #
+  # fonts:
+  #   - family: Fraunces
+  #     fonts:
+  #       - asset: assets/fonts/Fraunces-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Fraunces-SemiBold.ttf
+  #         weight: 600
+  #   - family: Space Grotesk
+  #     fonts:
+  #       - asset: assets/fonts/SpaceGrotesk-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/SpaceGrotesk-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/SpaceGrotesk-Bold.ttf
+  #         weight: 700
+  #   - family: Inter
+  #     fonts:
+  #       - asset: assets/fonts/Inter-Regular.ttf
+  #         weight: 400
+  #       - asset: assets/fonts/Inter-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Inter-SemiBold.ttf
+  #         weight: 600
