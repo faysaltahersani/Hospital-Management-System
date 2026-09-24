@@ -266,6 +266,13 @@ const billToJson = (opt, personMap = {}) => {
     personMap[String(extra.referral_person_id)] ||
     null;
 
+  const commissionAmount = Number(extra.commission_amount || 0);
+  const paidAmount = Number(extra.paid_amount || 0);
+  const dueAmount =
+    extra.due_amount !== undefined
+      ? Number(extra.due_amount)
+      : Math.max(commissionAmount - paidAmount, 0);
+
   return {
     id: opt.id,
     referral_bill_code: opt.code,
@@ -282,9 +289,10 @@ const billToJson = (opt, personMap = {}) => {
     bill_number: extra.bill_number || `BILL-${opt.id}`,
     bill_amount: Number(extra.bill_amount || 0),
     commission_percent: Number(extra.commission_percent || 0),
-    commission_amount: Number(extra.commission_amount || 0),
-    paid_amount: Number(extra.paid_amount || 0),
-    due_amount: Number(extra.due_amount || 0),
+    commission_amount: commissionAmount,
+    paid_amount: paidAmount,
+    due_amount: dueAmount,
+    payments: Array.isArray(extra.payments) ? extra.payments : [],
     creator: { full_name: 'Admin' },
     updater: { full_name: 'N/A' },
     created_at: opt.createdAt,
@@ -379,83 +387,133 @@ const RATE_FIELD_BY_TYPE = Object.freeze({
   radiology: 'radiology_commission_per',
   blood: 'blood_bank_commission_per',
   blood_bank: 'blood_bank_commission_per',
+  'blood bank': 'blood_bank_commission_per',
   ambulance: 'ambulance_commission_per',
 });
 
-// BUG-008 / BUG-009 — commission used to be whatever the client posted:
-// `bill_amount`, `commission_percent` and `commission_amount` were all stored
-// verbatim with no validation (a 50% rate on a 1,950 bill is in the shipped
-// data), the per-module rates configured on the referral person were never read
-// by any code path, and there was no route validation at all.
-//
-// The amount is now taken from a real invoice (never from the request), the rate
-// comes from the referral person's configured percentage for that service type,
-// and the commission is computed server-side.
 const createBill = async (input, currentUserId) => {
-  const { Invoice } = require('../../models');
+  const { Invoice, Patient } = require('../../models');
 
   const person = await MasterOption.findByPk(input.referral_person_id);
   if (!person || person.type !== 'referral_person') {
     throw ApiError.badRequest('A valid referral person is required');
   }
 
-  if (!input.invoice_id) {
-    throw ApiError.badRequest(
-      'invoice_id is required: commission must be calculated from a real invoice, not a supplied amount'
-    );
-  }
-  const invoice = await Invoice.findByPk(input.invoice_id);
-  if (!invoice) throw ApiError.badRequest(`Invoice ${input.invoice_id} not found`);
-
-  const patientType = String(input.patient_type || 'opd').toLowerCase().trim();
-  const rateField = RATE_FIELD_BY_TYPE[patientType];
+  // Normalize patient type (handle "Blood Bank", "blood_bank", etc.)
+  const rawType = String(input.patient_type || 'opd').toLowerCase().trim();
+  const normalizedType = rawType.replace(/[\s-]+/g, '_');
+  const rateField = RATE_FIELD_BY_TYPE[normalizedType] || RATE_FIELD_BY_TYPE[rawType];
   if (!rateField) {
     throw ApiError.badRequest(
-      `Unknown service type "${input.patient_type}". Expected one of: ${Object.keys(RATE_FIELD_BY_TYPE).join(', ')}`
+      `Unknown service type "${input.patient_type}". Expected one of: opd, ipd, pharmacy, pathology, lab, radiology, blood_bank, ambulance`
     );
+  }
+
+  let invoice = null;
+  let billAmount = 0;
+  let billNumber = '';
+  let billDate = new Date();
+  let patientId = input.patient_id ? Number(input.patient_id) : null;
+  let patientName = null;
+  let patientCode = null;
+
+  if (input.invoice_id) {
+    invoice = await Invoice.findByPk(input.invoice_id);
+    if (!invoice) throw ApiError.badRequest(`Invoice ${input.invoice_id} not found`);
+    billAmount = Number(invoice.total || 0);
+    billNumber = invoice.invoice_code;
+    billDate = invoice.issued_at || new Date();
+    if (!patientId && invoice.patient_id) {
+      patientId = invoice.patient_id;
+    }
+  } else if (input.bill_number && (input.bill_amount !== undefined && input.bill_amount !== null)) {
+    // Support manual / external bill entry
+    billNumber = String(input.bill_number).trim();
+    billAmount = Number(input.bill_amount || 0);
+    if (billAmount < 0) {
+      throw ApiError.badRequest('Bill amount must be non-negative');
+    }
+    billDate = input.bill_date ? new Date(input.bill_date) : new Date();
+  } else {
+    throw ApiError.badRequest(
+      'Either invoice_id or both bill_number and bill_amount are required'
+    );
+  }
+
+  if (patientId) {
+    const patient = await Patient.findByPk(patientId, { attributes: ['id', 'full_name', 'patient_code'] });
+    if (patient) {
+      patientName = patient.full_name;
+      patientCode = patient.patient_code;
+    }
   }
 
   const config = parseDesc(person.description);
-  const rate = Number(config[rateField] || 0);
-  if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
-    throw ApiError.badRequest(
-      `Referral person "${person.label}" has no valid ${patientType} commission rate configured`
-    );
+  const configuredRate = Number(config[rateField] || 0);
+
+  // Rate: respect user-entered rate if provided, otherwise fallback to configured rate
+  let rate = configuredRate;
+  if (input.commission_percent !== undefined && input.commission_percent !== null && input.commission_percent !== '') {
+    const userRate = Number(input.commission_percent);
+    if (Number.isFinite(userRate) && userRate >= 0 && userRate <= 100) {
+      rate = userRate;
+    }
+  }
+  if (!Number.isFinite(rate) || rate < 0) {
+    rate = 0;
   }
 
-  const billAmount = Number(invoice.total || 0);
-  // BUG-054 - percentage of money on integer minor units. The float form
-  // could land a cent off, and the commission is what the hospital pays out.
-  const commissionAmount = money.percentOf(billAmount, rate);
+  // Commission amount: compute percentage or accept user-specified override
+  let commissionAmount = money.percentOf(billAmount, Math.min(rate, 100));
+  if (input.commission_amount !== undefined && input.commission_amount !== null && input.commission_amount !== '') {
+    const userAmount = Number(input.commission_amount);
+    if (Number.isFinite(userAmount) && userAmount >= 0) {
+      commissionAmount = userAmount;
+    }
+  }
+
+  // Process payments
+  const inputPayments = Array.isArray(input.payments) ? input.payments : [];
+  const normalizedPayments = inputPayments
+    .map((p) => ({
+      account_id: p.account_id ? Number(p.account_id) : null,
+      account_name: p.account_name || null,
+      amount: Number(p.amount || 0),
+    }))
+    .filter((p) => p.amount > 0);
+
+  const calculatedPaid = normalizedPayments.reduce((sum, p) => sum + p.amount, 0);
+  const paidAmount =
+    input.paid_amount !== undefined && input.paid_amount !== null && input.paid_amount !== ''
+      ? Number(input.paid_amount)
+      : calculatedPaid;
+
+  const dueAmount =
+    input.due_amount !== undefined && input.due_amount !== null && input.due_amount !== ''
+      ? Number(input.due_amount)
+      : Math.max(commissionAmount - paidAmount, 0);
 
   const code = 'REF-BILL-' + String(1000 + (await allocate('referral_bill')));
 
   const extra = {
-    patient_id: invoice.patient_id,
-    patient_name: null,
-    patient_code: null,
+    patient_id: patientId,
+    patient_name: patientName,
+    patient_code: patientCode,
     referral_person_id: person.id,
     referral_person_name: person.label,
-    patient_type: patientType,
-    invoice_id: invoice.id,
-    bill_number: invoice.invoice_code,
-    bill_date: invoice.issued_at,
+    patient_type: input.patient_type || 'OPD',
+    invoice_id: invoice ? invoice.id : null,
+    bill_number: billNumber,
+    bill_date: billDate,
     bill_amount: billAmount,
     commission_percent: rate,
     commission_amount: commissionAmount,
-    paid_amount: 0,
-    due_amount: commissionAmount,
+    paid_amount: paidAmount,
+    due_amount: dueAmount,
+    payments: normalizedPayments,
     created_by: currentUserId || null,
     calculated_at: new Date().toISOString(),
   };
-
-  if (invoice.patient_id) {
-    const patient = await Patient.findByPk(invoice.patient_id, { attributes: ['full_name', 'patient_code'] });
-    if (patient) {
-      extra.patient_name = patient.full_name;
-      extra.patient_code = patient.patient_code;
-    }
-  }
 
   const opt = await MasterOption.create({
     type: 'referral_bill',
