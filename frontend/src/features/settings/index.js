@@ -1,8 +1,11 @@
 export { BackupPage } from "./components/BackupPage";
-export { BranchManagePage } from "./components/BranchManagePage";
+export { OrganizationBranchPage as BranchManagePage } from "./components/OrganizationBranchPage";
 export { ChargeManagePage } from "./components/ChargeManagePage";
 export { CompanyProfilePage } from "./components/CompanyProfilePage";
 export { ImportDataPage } from "./components/ImportDataPage";
 export { SettingsPage } from "./components/SettingsPage";
-export { UserAccessPage } from "./components/UserAccessPage";
+export { ServiceCataloguePage } from "./components/ServiceCataloguePage";
+export { SecurityActivityPage } from "./components/SecurityActivityPage";
+export { UserAccessMatrixPage as UserAccessPage } from "./components/UserAccessMatrixPage";
 export { UserManagePage } from "./components/UserManagePage";
+export { WorkflowApprovalPage } from "./components/WorkflowApprovalPage";

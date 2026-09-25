@@ -16,6 +16,14 @@ module.exports = (sequelize) => {
         defaultValue: INVOICE_ITEM_TYPES.OTHER,
       },
       reference_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+      service_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+      service_price_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+      pricing_snapshot: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        get() { const v = this.getDataValue('pricing_snapshot'); try { return v ? JSON.parse(v) : null; } catch { return null; } },
+        set(v) { this.setDataValue('pricing_snapshot', v == null ? null : JSON.stringify(v)); },
+      },
       description: { type: DataTypes.STRING(255), allowNull: false },
       quantity: { type: DataTypes.DECIMAL(10, 2), allowNull: false, defaultValue: 1 },
       unit_price: { type: DataTypes.DECIMAL(12, 2), allowNull: false, defaultValue: 0 },
@@ -26,7 +34,7 @@ module.exports = (sequelize) => {
       modelName: 'InvoiceItem',
       tableName: 'invoice_items',
       paranoid: false,
-      indexes: [{ fields: ['invoice_id'] }, { fields: ['item_type'] }],
+      indexes: [{ fields: ['invoice_id'] }, { fields: ['item_type'] }, { fields: ['service_id'] }, { fields: ['service_price_id'] }],
     }
   );
 

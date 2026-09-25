@@ -61,8 +61,8 @@ const getById = async (id) => {
   return prescription.toJSON();
 };
 
-const create = async (input) => {
-  return sequelize.transaction(async (t) => {
+const create = async (input, options = {}) => {
+  const work = async (t) => {
     await ensureReferences(input, { transaction: t });
     const year = currentYear();
     const prescription = await withCodeRetry(async () => {
@@ -74,6 +74,7 @@ const create = async (input) => {
           patient_id: input.patient_id,
           doctor_id: input.doctor_id,
           appointment_id: input.appointment_id || null,
+          emergency_encounter_id: input.emergency_encounter_id || null,
           prescribed_at: input.prescribed_at || new Date(),
           diagnosis: input.diagnosis || null,
           notes: input.notes || null,
@@ -90,7 +91,8 @@ const create = async (input) => {
     if (items.length) await repository.createItems(items, { transaction: t });
 
     return (await repository.findById(prescription.id, { transaction: t })).toJSON();
-  });
+  };
+  return options.transaction ? work(options.transaction) : sequelize.transaction(work);
 };
 
 const update = async (id, changes) => {

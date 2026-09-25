@@ -12,7 +12,13 @@
 //     timeout fired
 
 const { Op } = require('sequelize');
-const { User } = require('../../models');
+const { User, Organization, Hospital, Branch } = require('../../models');
+
+const scopeInclude = [
+  { model: Organization, as: 'organization', attributes: ['id', 'code', 'name'], required: false },
+  { model: Hospital, as: 'hospital', attributes: ['id', 'code', 'name'], required: false },
+  { model: Branch, as: 'branch', attributes: ['id', 'code', 'name'], required: false },
+];
 
 const findAndCount = async ({ filters = {}, search, limit, offset }) => {
   const where = { ...filters };
@@ -25,13 +31,15 @@ const findAndCount = async ({ filters = {}, search, limit, offset }) => {
   }
   return User.findAndCountAll({
     where,
+    include: scopeInclude,
     limit,
     offset,
+    distinct: true,
     order: [['created_at', 'DESC']],
   });
 };
 
-const findById = (id) => User.findByPk(id);
+const findById = (id) => User.findByPk(id, { include: scopeInclude });
 const findByEmail = (email) => User.findOne({ where: { email } });
 const create = (data, options = {}) => User.create(data, options);
 const update = (user, changes, options = {}) => user.update(changes, options);

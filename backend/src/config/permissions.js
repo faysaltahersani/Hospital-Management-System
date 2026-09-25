@@ -24,9 +24,12 @@ const MODULE_GROUPS = Object.freeze({
   'blood-bank': ['blood'],
   departments: ['doctor', 'hr_and_payroll'],
   doctors: ['doctor'],
+  emr: ['patient', 'opd', 'ipd'],
+  emergency: ['emergency'],
   hr: ['hr_and_payroll'],
   ipd: ['ipd'],
   laboratory: ['pathology'],
+  organization: ['settings'],
   // Diagnostics spans both diagnostic departments, so holding either menu
   // permission grants it. A user who can reach Pathology or Radiology in the UI
   // can reach the investigation records behind them, and no one else can.
@@ -39,6 +42,8 @@ const MODULE_GROUPS = Object.freeze({
   reports: ['reports'],
   settings: ['settings'],
   users: ['settings'],
+  workflows: ['settings'],
+  'service-catalog': ['settings', 'finance'],
 });
 
 const groupsForModule = (moduleName) => MODULE_GROUPS[moduleName] || null;

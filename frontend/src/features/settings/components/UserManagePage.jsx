@@ -11,7 +11,7 @@ const initialForm = {
   role_id: "",
   user_type_ids: [],
   user_type_id: "",
-  branch: "",
+  branch_id: "",
   is_two_factor_enabled: false,
 };
 
@@ -29,7 +29,7 @@ const fallbackUserTypes = [
   { id: 5, name: "Approver", slug: "approver" },
 ];
 
-const fallbackBranches = ["deshid bd"];
+const fallbackBranches = [];
 
 function SectionTitle({ children }) {
   return (
@@ -302,7 +302,7 @@ export function UserManagePage() {
   );
 
   const branchOptions = useMemo(
-    () => branches.map((branch) => ({ label: branch, value: branch })),
+    () => branches.map((branch) => ({ label: `${branch.name}${branch.hospital?.name ? ` — ${branch.hospital.name}` : ""}`, value: String(branch.id) })),
     [branches]
   );
 
@@ -389,10 +389,10 @@ export function UserManagePage() {
       username: user.username || "",
       email: user.email || "",
       password: "",
-      role_id: user.role_id ? String(user.role_id) : "",
+      role_id: user.role_id ? String(user.role_id) : String(roles.find((role) => role.slug === user.role)?.id || ""),
       user_type_ids: (user.user_types || []).map((type) => String(type.id)),
       user_type_id: user.user_type_id ? String(user.user_type_id) : "",
-      branch: user.branch || "",
+      branch_id: user.branch_id ? String(user.branch_id) : "",
       is_two_factor_enabled: Boolean(user.is_two_factor_enabled),
     });
     setMessage("");
@@ -421,7 +421,7 @@ export function UserManagePage() {
         role_id: Number(form.role_id || roleOptions[0]?.value),
         user_type_ids: form.user_type_ids.map(Number),
         user_type_id: Number(form.user_type_id || userTypeOptions[0]?.value),
-        branch: form.branch,
+        branch_id: form.branch_id ? Number(form.branch_id) : null,
         is_two_factor_enabled: form.is_two_factor_enabled,
       };
 
@@ -482,8 +482,8 @@ export function UserManagePage() {
         user.username || user.full_name || "",
         user.user_type_name || "",
         user.doctor_id || "",
-        user.branch || "",
-        user.role_name || "",
+        user.branch?.name || "",
+        user.role_name || user.role || "",
         user.is_two_factor_enabled ? "Enabled" : "Disabled",
         user.created_by_name || "",
         user.updated_by_name || "",
@@ -524,10 +524,10 @@ export function UserManagePage() {
             />
             <SelectField
               label="SELECT BRANCH"
-              name="branch"
+              name="branch_id"
               onChange={handleChange}
               options={branchOptions}
-              value={form.branch}
+              value={form.branch_id}
             />
           </div>
 
@@ -705,9 +705,9 @@ export function UserManagePage() {
                       <td className="px-2 py-2 whitespace-nowrap">{row.username || row.full_name}</td>
                       <td className="px-2 py-2 whitespace-nowrap">{row.user_type_name || ""}</td>
                       <td className="px-2 py-2 whitespace-nowrap">{row.doctor_id || ""}</td>
-                      <td className="px-2 py-2 whitespace-nowrap">{row.branch || ""}</td>
+                      <td className="px-2 py-2 whitespace-nowrap">{row.branch?.name || ""}</td>
                       <td className="px-2 py-2 whitespace-nowrap text-[10px] leading-[1.35] text-[#294b63]">
-                        {row.role_name || ""}
+                        {row.role_name || row.role || ""}
                       </td>
                       <td className="px-2 py-2 whitespace-nowrap">
                         {row.is_two_factor_enabled ? "Enabled" : "Disabled"}

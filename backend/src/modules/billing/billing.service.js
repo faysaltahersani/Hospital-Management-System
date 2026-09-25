@@ -12,6 +12,8 @@ const {
 } = require('../../models');
 const money = require('../../utils/money');
 const repository = require('./billing.repository');
+const { currentTenant } = require('../../utils/tenantContext');
+const serviceCatalog = require('../service-catalog/service-catalog.service');
 
 // BUG-054 - normalises a DECIMAL column value to an exact 2dp number instead
 // of letting a float through. Every money read in this module goes via here.
@@ -67,6 +69,9 @@ const buildInvoiceTotals = (items, discount = 0, tax = 0) => {
     return {
       item_type: item.item_type,
       reference_id: item.reference_id || null,
+      service_id: item.service_id || null,
+      service_price_id: item.service_price_id || null,
+      pricing_snapshot: item.pricing_snapshot || null,
       description: item.description,
       quantity,
       unit_price: money.toMajor(money.toMinor(unitPrice)),
@@ -76,6 +81,18 @@ const buildInvoiceTotals = (items, discount = 0, tax = 0) => {
   const subtotal = money.add(...rows.map((r) => r.total_price));
   const total = money.subFloor(money.add(subtotal, tax), discount);
   return { rows, subtotal, total };
+};
+
+const enrichCatalogueItems = async (items, transaction) => {
+  const tenant = currentTenant();
+  if (!tenant) return items;
+  const rows = [];
+  for (const item of items) {
+    if (!item.service_id) { rows.push(item); continue; }
+    const resolved = await serviceCatalog.resolvePrice({ service_id:item.service_id, payer_type:item.payer_type||'self', payer_reference:item.payer_reference||null }, tenant, { transaction });
+    rows.push({ ...item, unit_price:resolved.amount, service_price_id:resolved.service_price_id, pricing_snapshot:{...resolved,captured_at:new Date().toISOString(),legacy_fallback_amount:toMoney(item.unit_price)} });
+  }
+  return rows;
 };
 
 const listInvoices = async (query) => {
@@ -133,7 +150,8 @@ const createInvoice = async (input, currentUserId) =>
         if (!appointment) throw ApiError.badRequest('Appointment not found');
       }
 
-      const totals = buildInvoiceTotals(input.items, input.discount, input.tax);
+      const pricedItems = await enrichCatalogueItems(input.items, t);
+      const totals = buildInvoiceTotals(pricedItems, input.discount, input.tax);
       // Atomically claimed, so two concurrent writers cannot derive the same
       // number. Deriving it from a read (COUNT(*)+1, or MAX(suffix)+1) is a
       // read-then-write race; with 11 rows present and INV-2026-000012 already
@@ -208,7 +226,7 @@ const updateInvoice = async (id, changes) => {
     }
 
     if (changes.items || changes.discount !== undefined || changes.tax !== undefined) {
-      const sourceItems = changes.items || invoice.items.map((item) => item.toJSON());
+      const sourceItems = changes.items ? await enrichCatalogueItems(changes.items, t) : invoice.items.map((item) => item.toJSON());
       const totals = buildInvoiceTotals(sourceItems, changes.discount ?? invoice.discount, changes.tax ?? invoice.tax);
       Object.assign(updateData, { subtotal: totals.subtotal, total: totals.total });
       if (changes.items) {

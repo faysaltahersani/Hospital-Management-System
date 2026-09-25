@@ -24,6 +24,9 @@ const {
   RadiologyOrder,
   Invoice,
   MedicineSale,
+  EmergencyEncounter,
+  VitalSign,
+  ClinicalNote,
 } = require('../../models');
 
 const findAndCount = ({ filters = {}, dateRange, search, limit, offset }) => {
@@ -66,27 +69,33 @@ const findById = (id) =>
 
 const findTimelineByPatientId = async (patientId, { limit = 20 } = {}) => {
   const commonWhere = { patient_id: patientId };
-  const [appointments, opdVisits, admissions, prescriptions, labOrders, radiologyOrders, invoices, medicineSales] =
+  const [appointments, opdVisits, admissions, emergencyEncounters, prescriptions, labOrders, radiologyOrders, invoices, medicineSales, vitalSigns, clinicalNotes] =
     await Promise.all([
       Appointment.findAll({ where: commonWhere, limit, order: [['appointment_date', 'DESC'], ['appointment_time', 'DESC']] }),
       OpdVisit.findAll({ where: commonWhere, limit, order: [['visit_date', 'DESC']] }),
       Admission.findAll({ where: commonWhere, limit, order: [['admitted_at', 'DESC']] }),
+      EmergencyEncounter.findAll({ where: commonWhere, limit, order: [['arrival_at', 'DESC']] }),
       Prescription.findAll({ where: commonWhere, limit, order: [['prescribed_at', 'DESC']] }),
       LabOrder.findAll({ where: commonWhere, limit, order: [['ordered_at', 'DESC']] }),
       RadiologyOrder.findAll({ where: commonWhere, limit, order: [['ordered_at', 'DESC']] }),
       Invoice.findAll({ where: commonWhere, limit, order: [['issued_at', 'DESC']] }),
       MedicineSale.findAll({ where: commonWhere, limit, order: [['sold_at', 'DESC']] }),
+      VitalSign.findAll({ where: commonWhere, limit, order: [['captured_at', 'DESC']] }),
+      ClinicalNote.findAll({ where: commonWhere, limit, order: [['created_at', 'DESC']] }),
     ]);
 
   return {
     appointments,
     opd_visits: opdVisits,
     admissions,
+    emergency_encounters: emergencyEncounters,
     prescriptions,
     lab_orders: labOrders,
     radiology_orders: radiologyOrders,
     invoices,
     medicine_sales: medicineSales,
+    vital_signs: vitalSigns,
+    clinical_notes: clinicalNotes,
   };
 };
 

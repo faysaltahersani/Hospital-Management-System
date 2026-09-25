@@ -347,6 +347,16 @@ export function PatientListPage() {
                           <path d="M9 1.5a7.5 7.5 0 1 0 7.5 7.5h-1.5A6 6 0 1 1 9 3V1.5Zm.75 3v4.31l3.2 1.85.75-1.3-2.45-1.41V4.5h-1.5Z" />
                         </svg>
                       </button>
+                      <button
+                        className="text-[#7b3fc6]"
+                        onClick={() => navigate(`/patient/${row.id}/emr`)}
+                        title="Centralized EMR"
+                        type="button"
+                      >
+                        <svg aria-hidden="true" className="h-[18px] w-[18px]" fill="currentColor" viewBox="0 0 18 18">
+                          <path d="M3 2h9.5L15 4.5V16H3V2Zm8.5 1.5V5h1.5l-1.5-1.5ZM5 7h3V4h2v3h3v2h-3v3H8V9H5V7Zm0 6.5h8V15H5v-1.5Z" />
+                        </svg>
+                      </button>
                       <button className="text-[#138d13]" onClick={() => handleEdit(row)} type="button">
                         <svg aria-hidden="true" className="h-[18px] w-[18px]" fill="currentColor" viewBox="0 0 18 18">
                           <path d="M2 13.5V16h2.5l7.37-7.37-2.5-2.5L2 13.5Zm10.6-8.85 2.25 2.25 1.06-1.06a.75.75 0 0 0 0-1.06L14.72 3.6a.75.75 0 0 0-1.06 0L12.6 4.65ZM2 3h8v1.5H2V3Zm0 4h5.5v1.5H2V7Zm0 4H6v1.5H2V11Z" />

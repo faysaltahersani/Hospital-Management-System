@@ -38,6 +38,22 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: ROLES.RECEPTIONIST,
       },
+      organization_id: {
+        type: DataTypes.BIGINT.UNSIGNED,
+        allowNull: true,
+      },
+      hospital_id: {
+        type: DataTypes.BIGINT.UNSIGNED,
+        allowNull: true,
+      },
+      branch_id: {
+        type: DataTypes.BIGINT.UNSIGNED,
+        allowNull: true,
+      },
+      department_id: {
+        type: DataTypes.BIGINT.UNSIGNED,
+        allowNull: true,
+      },
       phone: {
         type: DataTypes.STRING(30),
         allowNull: true,
@@ -71,6 +87,10 @@ module.exports = (sequelize) => {
       indexes: [
         { fields: ['email'], unique: true },
         { fields: ['role'] },
+        { fields: ['organization_id'] },
+        { fields: ['hospital_id'] },
+        { fields: ['branch_id'] },
+        { fields: ['department_id'] },
       ],
     }
   );

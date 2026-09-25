@@ -26,6 +26,7 @@ const {
 // BUG-054 - all arithmetic delegates to utils/money, which works on integer
 // minor units. `round2` remained float-based and could still drift.
 const money = require('./money');
+const { currentTenant } = require('./tenantContext');
 const toMoney = (value) => money.toMajor(money.toMinor(value));
 const round2 = (value) => money.toMajor(money.toMinor(value));
 
@@ -73,6 +74,9 @@ const resolveTotals = ({ lines, discount, discount_percent, tax, tax_rate }) => 
     return {
       item_type: line.item_type,
       reference_id: line.reference_id || null,
+      service_id: line.service_id || null,
+      service_price_id: line.service_price_id || null,
+      pricing_snapshot: line.pricing_snapshot || null,
       description: String(line.description || 'Charge').slice(0, 255),
       quantity,
       unit_price: toMoney(line.unit_price),
@@ -142,7 +146,27 @@ const createEncounterInvoice = async ({
   }
 
   const { Invoice, InvoiceItem, Payment } = models;
-  const totals = resolveTotals({ lines, discount, discount_percent, tax, tax_rate });
+  const tenant = currentTenant();
+  const catalogue = require('../modules/service-catalog/service-catalog.service');
+  const resolvedLines = [];
+  for (const line of lines) {
+    let resolved = null;
+    if (tenant && line.service_id) {
+      try { resolved = await catalogue.resolvePrice({ service_id: line.service_id, payer_type: line.payer_type || 'self', payer_reference: line.payer_reference || null, at: issuedAt }, tenant, { transaction }); }
+      catch (error) { if (error.statusCode !== 404) throw error; }
+    } else if (tenant && line.service_source_type && line.service_source_id) {
+      try { resolved = await catalogue.resolveSourcePrice({ source_type: line.service_source_type, source_id: line.service_source_id, payer_type: line.payer_type || 'self', payer_reference: line.payer_reference || null, at: issuedAt }, tenant, { transaction }); }
+      catch (error) { if (error.statusCode !== 404) throw error; }
+    }
+    resolvedLines.push(resolved ? {
+      ...line,
+      service_id: resolved.service_id,
+      service_price_id: resolved.service_price_id,
+      unit_price: resolved.amount,
+      pricing_snapshot: { ...resolved, captured_at: new Date().toISOString(), legacy_fallback_amount: toMoney(line.unit_price) },
+    } : line);
+  }
+  const totals = resolveTotals({ lines: resolvedLines, discount, discount_percent, tax, tax_rate });
 
   const cleanPayments = payments
     .map((p) => ({

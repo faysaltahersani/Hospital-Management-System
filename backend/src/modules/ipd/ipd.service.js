@@ -101,8 +101,8 @@ const getDischargeSummary = async (id) => {
   };
 };
 
-const admit = async (input, currentUserId) => {
-  return sequelize.transaction(async (t) => {
+const admit = async (input, currentUserId, options = {}) => {
+  const work = async (t) => {
     const patient = await Patient.findByPk(input.patient_id, { transaction: t });
     if (!patient) throw ApiError.badRequest('Patient not found');
 
@@ -194,7 +194,8 @@ const admit = async (input, currentUserId) => {
 
     const createdRecord = await repository.findById(admission.id, { transaction: t });
     return mapAdmissionResponse(createdRecord.toJSON());
-  });
+  };
+  return options.transaction ? work(options.transaction) : sequelize.transaction(work);
 };
 
 // BUG-005 — real transactional payment record. Previously this performed an

@@ -206,6 +206,8 @@ const dispatchTrip = async (input, currentUserId) => {
         lines: [{
           item_type: 'ambulance',
           reference_id: trip.id,
+          service_source_type: 'ambulance',
+          service_source_id: ambulance.id,
           description: `Ambulance trip ${trip.trip_code} (${ambulance.vehicle_number})`,
           quantity: 1,
           unit_price: tripFare,

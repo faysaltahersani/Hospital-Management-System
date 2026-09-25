@@ -15,7 +15,7 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const user = await service.create(req.body);
+  const user = await service.create(req.body, req.user);
   return ApiResponse.created(res, user, 'User created');
 });
 
@@ -40,4 +40,8 @@ const setPermissions = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, data, 'Permissions saved');
 });
 
-module.exports = { list, getById, create, update, remove, getPermissions, setPermissions };
+const getMeta = asyncHandler(async (_req, res) => {
+  return ApiResponse.success(res, await service.getMeta(), 'OK');
+});
+
+module.exports = { list, getById, create, update, remove, getPermissions, setPermissions, getMeta };

@@ -16,7 +16,7 @@ router.use(authenticate);
 router.get(
   '/:id/permissions',
   (req, res, next) => {
-    if (req.user.role === ROLES.ADMIN || String(req.user.id) === String(req.params.id)) {
+    if ([ROLES.SUPER_ADMIN, ROLES.ADMIN].includes(req.user.role) || String(req.user.id) === String(req.params.id)) {
       return next();
     }
     return res.status(403).json({ success: false, message: 'Forbidden' });
@@ -26,7 +26,7 @@ router.get(
 
 router.use(authorize(ROLES.ADMIN));
 
-router.get('/meta', (_req, res) => res.json({ success: true, message: 'OK', data: { users: [] } }));
+router.get('/meta', controller.getMeta);
 router.get('/', validate(schemas.list), controller.list);
 router.put('/:id/permissions', controller.setPermissions);
 router.get('/:id', validate(schemas.getById), controller.getById);

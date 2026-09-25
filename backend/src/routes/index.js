@@ -3,7 +3,7 @@
 const { Router } = require('express');
 
 const { authenticate } = require('../middlewares/auth.middleware');
-const { requireModulePermission } = require('../middlewares/permission.middleware');
+const { requireModulePermission, requireSensitiveDataPermission } = require('../middlewares/permission.middleware');
 
 const authRoutes = require('../modules/auth/auth.routes');
 const usersRoutes = require('../modules/users/users.routes');
@@ -27,6 +27,11 @@ const hrRoutes = require('../modules/hr/hr.routes');
 const settingsRoutes = require('../modules/settings/settings.routes');
 const auditLogsRoutes = require('../modules/audit-logs/audit-logs.routes');
 const reportsRoutes = require('../modules/reports/reports.routes');
+const organizationRoutes = require('../modules/organization/organization.routes');
+const emrRoutes = require('../modules/emr/emr.routes');
+const workflowsRoutes = require('../modules/workflows/workflows.routes');
+const serviceCatalogRoutes = require('../modules/service-catalog/service-catalog.routes');
+const emergencyRoutes = require('../modules/emergency/emergency.routes');
 
 const router = Router();
 
@@ -66,7 +71,7 @@ router.use('/opd', guard('opd'), opdRoutes);
 router.use('/pharmacy', guard('pharmacy'), pharmacyRoutes);
 router.use('/prescriptions', prescriptionsRoutes);
 router.use('/laboratory', guard('laboratory'), laboratoryRoutes);
-router.use('/diagnostics', guard('diagnostics'), diagnosticsRoutes);
+router.use('/diagnostics', guard('diagnostics'), requireSensitiveDataPermission('diagnostics'), diagnosticsRoutes);
 router.use('/radiology', guard('radiology'), radiologyRoutes);
 router.use('/billing', guard('billing'), billingRoutes);
 router.use('/ambulance', guard('ambulance'), ambulanceRoutes);
@@ -76,6 +81,11 @@ router.use('/hr', guard('hr'), hrRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/audit-logs', auditLogsRoutes);
 router.use('/reports', guard('reports'), reportsRoutes);
+router.use('/organization', guard('organization'), organizationRoutes);
+router.use('/emr', guard('emr'), requireSensitiveDataPermission('emr'), emrRoutes);
+router.use('/workflows', guard('workflows'), workflowsRoutes);
+router.use('/service-catalog', guard('service-catalog'), serviceCatalogRoutes);
+router.use('/emergency', guard('emergency'), emergencyRoutes);
 
 // BUG-021 — a catch-all used to answer every unmatched GET with
 // `{success:true, data:[]}` (and a large hardcoded object for `*/meta`). That

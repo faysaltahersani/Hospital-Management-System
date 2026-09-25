@@ -20,6 +20,7 @@ module.exports = (sequelize) => {
       // selectable on the Bed Entry screen instead of disappearing.
       building_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
       floor_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+      department_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
       description: { type: DataTypes.TEXT, allowNull: true },
       is_active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     },

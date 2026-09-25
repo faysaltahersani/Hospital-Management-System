@@ -90,7 +90,7 @@ import {
   PathologyTestUnitEntryPage,
 } from "../features/pathology";
 import { DiagnosticHistoryPage } from "../features/diagnostics";
-import { PatientEntryPage, PatientListPage, PatientPage } from "../features/patient";
+import { PatientEmrPage, PatientEntryPage, PatientListPage, PatientPage } from "../features/patient";
 import {
   PharmacyPage,
   PharmacyPurchasePage,
@@ -163,8 +163,11 @@ import {
   CompanyProfilePage,
   ImportDataPage,
   SettingsPage,
+  SecurityActivityPage,
   UserAccessPage,
   UserManagePage,
+  WorkflowApprovalPage,
+  ServiceCataloguePage,
 } from "../features/settings";
 import { canAccessPath, getDefaultPathForRole, getStoredRole, hasStoredToken, subscribeToAuthChanges } from "../lib/auth";
 import { allNavItems } from "../features/navbar/data/navigation";
@@ -310,6 +313,7 @@ function ProtectedApp() {
           <Route path="/patient" element={<PatientPage />} />
           <Route path="/patient/entry" element={<PatientEntryPage />} />
           <Route path="/patient/list" element={<PatientListPage />} />
+          <Route path="/patient/:patientId/emr" element={<PatientEmrPage />} />
           <Route path="/pathology/bill-record" element={<PathologyBillRecordPage />} />
           <Route path="/pathology/bill-entry" element={<PathologyBillEntryPage />} />
           <Route path="/pathology/parameter-entry" element={<PathologyParameterEntryPage />} />
@@ -384,10 +388,13 @@ function ProtectedApp() {
           <Route path="/settings/backup" element={<BackupPage />} />
           <Route path="/settings/branch-manage" element={<BranchManagePage />} />
           <Route path="/settings/charge-manage" element={<ChargeManagePage />} />
+          <Route path="/settings/service-catalog" element={<ServiceCataloguePage />} />
           <Route path="/settings/company-profile" element={<CompanyProfilePage />} />
           <Route path="/settings/import-data" element={<ImportDataPage />} />
           <Route path="/settings/user-access/:role" element={<UserAccessPage />} />
           <Route path="/settings/user-manage" element={<UserManagePage />} />
+          <Route path="/settings/security-activity" element={<SecurityActivityPage />} />
+          <Route path="/settings/workflows" element={<WorkflowApprovalPage />} />
           {placeholderRoutes.map((item) => (
             <Route key={item.path} path={item.path} element={<ModulePlaceholderPage />} />
           ))}

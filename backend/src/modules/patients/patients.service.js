@@ -35,7 +35,7 @@ const getById = async (id) => {
 
 const timelineDate = (type, item) => {
   if (type === 'appointment') return `${item.appointment_date}T${String(item.appointment_time).slice(0, 8)}`;
-  return item.visit_date || item.admitted_at || item.prescribed_at || item.ordered_at || item.issued_at || item.sold_at;
+  return item.visit_date || item.admitted_at || item.arrival_at || item.prescribed_at || item.ordered_at || item.issued_at || item.sold_at || item.captured_at || item.created_at;
 };
 
 const timelineTitle = (type, item) => {
@@ -43,6 +43,7 @@ const timelineTitle = (type, item) => {
     item.appointment_code ||
     item.visit_code ||
     item.admission_code ||
+    item.encounter_code ||
     item.prescription_code ||
     item.order_code ||
     item.invoice_code ||
@@ -120,6 +121,12 @@ const PATIENT_DEPENDENTS = [
   { model: 'Prescription', label: 'prescription(s)' },
   { model: 'MedicineSale', label: 'pharmacy sale(s)' },
   { model: 'BloodIssue', label: 'blood issue(s)' },
+  { model: 'PatientAllergy', label: 'allergy record(s)' },
+  { model: 'PatientProblem', label: 'problem/diagnosis record(s)' },
+  { model: 'PatientHistory', label: 'medical history record(s)' },
+  { model: 'VitalSign', label: 'vital-sign record(s)' },
+  { model: 'ClinicalNote', label: 'clinical note(s)' },
+  { model: 'EmergencyEncounter', label: 'Emergency encounter(s)' },
 ];
 
 const remove = async (id) => {

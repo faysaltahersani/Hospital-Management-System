@@ -20,6 +20,7 @@ module.exports = (sequelize) => {
       radiology_order_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
       blood_issue_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
       ambulance_trip_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+      emergency_encounter_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
       issued_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
       due_at: { type: DataTypes.DATE, allowNull: true },
       subtotal: { type: DataTypes.DECIMAL(12, 2), allowNull: false, defaultValue: 0 },
@@ -34,6 +35,10 @@ module.exports = (sequelize) => {
       },
       notes: { type: DataTypes.TEXT, allowNull: true },
       created_by: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+      organization_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+      hospital_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+      branch_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+      department_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
     },
     {
       sequelize,

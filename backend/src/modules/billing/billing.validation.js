@@ -14,6 +14,7 @@ const idParam = {
 const invoiceItem = Joi.object({
   item_type: Joi.string().valid(...INVOICE_ITEM_TYPE_VALUES).required(),
   reference_id: Joi.number().integer().positive().allow(null),
+  service_id: Joi.number().integer().positive().allow(null),
   description: Joi.string().max(255).required(),
   quantity: Joi.number().precision(2).min(0.01).default(1),
   unit_price: Joi.number().precision(2).min(0).required(),

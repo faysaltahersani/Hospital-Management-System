@@ -8,12 +8,34 @@ const RefreshToken = require('./RefreshToken')(sequelize);
 const AuditLog = require('./AuditLog')(sequelize);
 
 // Organization
+const Organization = require('./Organization')(sequelize);
+const Hospital = require('./Hospital')(sequelize);
+const Branch = require('./Branch')(sequelize);
 const Department = require('./Department')(sequelize);
 
 // Patients & doctors
 const Patient = require('./Patient')(sequelize);
 const Doctor = require('./Doctor')(sequelize);
 const Appointment = require('./Appointment')(sequelize);
+const PatientAllergy = require('./PatientAllergy')(sequelize);
+const PatientProblem = require('./PatientProblem')(sequelize);
+const PatientHistory = require('./PatientHistory')(sequelize);
+const VitalSign = require('./VitalSign')(sequelize);
+const ClinicalNote = require('./ClinicalNote')(sequelize);
+const WorkflowDefinition = require('./WorkflowDefinition')(sequelize);
+const WorkflowStep = require('./WorkflowStep')(sequelize);
+const ApprovalRequest = require('./ApprovalRequest')(sequelize);
+const ApprovalAction = require('./ApprovalAction')(sequelize);
+
+// Emergency clinical operations
+const EmergencyEncounter = require('./EmergencyEncounter')(sequelize);
+const EmergencyTriage = require('./EmergencyTriage')(sequelize);
+const EmergencyDoctorAssignment = require('./EmergencyDoctorAssignment')(sequelize);
+const EmergencyAssessment = require('./EmergencyAssessment')(sequelize);
+const EmergencyOrder = require('./EmergencyOrder')(sequelize);
+const EmergencyProcedure = require('./EmergencyProcedure')(sequelize);
+const EmergencyObservation = require('./EmergencyObservation')(sequelize);
+const EmergencyDisposition = require('./EmergencyDisposition')(sequelize);
 
 // OPD / IPD / beds
 const Ward = require('./Ward')(sequelize);
@@ -86,8 +108,29 @@ const Payroll = require('./Payroll')(sequelize);
 // Settings / master data
 const Setting = require('./Setting')(sequelize);
 const MasterOption = require('./MasterOption')(sequelize);
+const ServiceType = require('./ServiceType')(sequelize);
+const ServiceCategory = require('./ServiceCategory')(sequelize);
+const Service = require('./Service')(sequelize);
+const ServicePrice = require('./ServicePrice')(sequelize);
+const PricingRule = require('./PricingRule')(sequelize);
+const ServiceSourceLink = require('./ServiceSourceLink')(sequelize);
 
 /* ====== Associations ====== */
+
+// Enterprise organization hierarchy
+Organization.hasMany(Hospital, { foreignKey: 'organization_id', as: 'hospitals' });
+Hospital.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization' });
+Hospital.hasMany(Branch, { foreignKey: 'hospital_id', as: 'branches' });
+Branch.belongsTo(Hospital, { foreignKey: 'hospital_id', as: 'hospital' });
+
+Organization.hasMany(User, { foreignKey: 'organization_id', as: 'users' });
+User.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization' });
+Hospital.hasMany(User, { foreignKey: 'hospital_id', as: 'users' });
+User.belongsTo(Hospital, { foreignKey: 'hospital_id', as: 'hospital' });
+Branch.hasMany(User, { foreignKey: 'branch_id', as: 'users' });
+User.belongsTo(Branch, { foreignKey: 'branch_id', as: 'branch' });
+Department.hasMany(User, { foreignKey: 'department_id', as: 'users' });
+User.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
 
 // Users
 User.hasOne(Patient, { foreignKey: 'user_id', as: 'patient_profile' });
@@ -103,6 +146,41 @@ RefreshToken.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 User.hasMany(AuditLog, { foreignKey: 'user_id', as: 'audit_logs' });
 AuditLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+Patient.hasMany(PatientAllergy, { foreignKey: 'patient_id', as: 'allergies' });
+PatientAllergy.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+Patient.hasMany(PatientProblem, { foreignKey: 'patient_id', as: 'problems' });
+PatientProblem.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+Patient.hasMany(PatientHistory, { foreignKey: 'patient_id', as: 'medical_histories' });
+PatientHistory.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+Patient.hasMany(VitalSign, { foreignKey: 'patient_id', as: 'vital_signs' });
+VitalSign.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+Patient.hasMany(ClinicalNote, { foreignKey: 'patient_id', as: 'clinical_notes' });
+ClinicalNote.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+PatientAllergy.belongsTo(User, { foreignKey: 'recorded_by', as: 'recorder' });
+PatientProblem.belongsTo(User, { foreignKey: 'recorded_by', as: 'recorder' });
+PatientHistory.belongsTo(User, { foreignKey: 'recorded_by', as: 'recorder' });
+VitalSign.belongsTo(User, { foreignKey: 'recorded_by', as: 'recorder' });
+ClinicalNote.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
+
+// Configurable workflow and approval engine
+Organization.hasMany(WorkflowDefinition, { foreignKey: 'organization_id', as: 'workflow_definitions' });
+WorkflowDefinition.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization' });
+WorkflowDefinition.belongsTo(Hospital, { foreignKey: 'hospital_id', as: 'hospital' });
+WorkflowDefinition.belongsTo(Branch, { foreignKey: 'branch_id', as: 'branch' });
+WorkflowDefinition.hasMany(WorkflowStep, { foreignKey: 'workflow_definition_id', as: 'steps' });
+WorkflowStep.belongsTo(WorkflowDefinition, { foreignKey: 'workflow_definition_id', as: 'definition' });
+WorkflowStep.belongsTo(User, { foreignKey: 'approver_user_id', as: 'approver_user' });
+WorkflowDefinition.hasMany(ApprovalRequest, { foreignKey: 'workflow_definition_id', as: 'requests' });
+ApprovalRequest.belongsTo(WorkflowDefinition, { foreignKey: 'workflow_definition_id', as: 'definition' });
+ApprovalRequest.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization' });
+ApprovalRequest.belongsTo(Hospital, { foreignKey: 'hospital_id', as: 'hospital' });
+ApprovalRequest.belongsTo(Branch, { foreignKey: 'branch_id', as: 'branch' });
+ApprovalRequest.belongsTo(User, { foreignKey: 'requested_by', as: 'requester' });
+ApprovalRequest.hasMany(ApprovalAction, { foreignKey: 'approval_request_id', as: 'actions' });
+ApprovalAction.belongsTo(ApprovalRequest, { foreignKey: 'approval_request_id', as: 'request' });
+ApprovalAction.belongsTo(WorkflowStep, { foreignKey: 'workflow_step_id', as: 'step' });
+ApprovalAction.belongsTo(User, { foreignKey: 'user_id', as: 'actor' });
 
 // Department / doctor
 Department.hasMany(Doctor, { foreignKey: 'department_id', as: 'doctors' });
@@ -303,6 +381,35 @@ Invoice.belongsTo(Appointment, { foreignKey: 'appointment_id', as: 'appointment'
 Invoice.hasMany(InvoiceItem, { foreignKey: 'invoice_id', as: 'items' });
 InvoiceItem.belongsTo(Invoice, { foreignKey: 'invoice_id', as: 'invoice' });
 
+// Enterprise service and charge catalogue. Source links preserve compatibility
+// with existing clinical masters while every invoice line keeps its price evidence.
+Organization.hasMany(ServiceType, { foreignKey: 'organization_id', as: 'service_types' });
+ServiceType.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization' });
+ServiceType.hasMany(ServiceCategory, { foreignKey: 'service_type_id', as: 'categories' });
+ServiceCategory.belongsTo(ServiceType, { foreignKey: 'service_type_id', as: 'type' });
+ServiceCategory.hasMany(Service, { foreignKey: 'service_category_id', as: 'services' });
+Service.belongsTo(ServiceCategory, { foreignKey: 'service_category_id', as: 'category' });
+Service.belongsTo(ServiceType, { foreignKey: 'service_type_id', as: 'type' });
+Service.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization' });
+Service.belongsTo(Hospital, { foreignKey: 'hospital_id', as: 'hospital' });
+Service.belongsTo(Branch, { foreignKey: 'branch_id', as: 'branch' });
+Service.hasMany(ServicePrice, { foreignKey: 'service_id', as: 'prices' });
+ServicePrice.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
+ServicePrice.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization' });
+ServicePrice.belongsTo(Hospital, { foreignKey: 'hospital_id', as: 'hospital' });
+ServicePrice.belongsTo(Branch, { foreignKey: 'branch_id', as: 'branch' });
+Service.hasMany(PricingRule, { foreignKey: 'service_id', as: 'pricing_rules' });
+PricingRule.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
+PricingRule.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization' });
+PricingRule.belongsTo(Hospital, { foreignKey: 'hospital_id', as: 'hospital' });
+PricingRule.belongsTo(Branch, { foreignKey: 'branch_id', as: 'branch' });
+ServiceCategory.hasMany(PricingRule, { foreignKey: 'service_category_id', as: 'pricing_rules' });
+PricingRule.belongsTo(ServiceCategory, { foreignKey: 'service_category_id', as: 'category' });
+Service.hasMany(ServiceSourceLink, { foreignKey: 'service_id', as: 'source_links' });
+ServiceSourceLink.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
+InvoiceItem.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
+InvoiceItem.belongsTo(ServicePrice, { foreignKey: 'service_price_id', as: 'service_price' });
+
 Invoice.hasMany(Payment, { foreignKey: 'invoice_id', as: 'payments' });
 Payment.belongsTo(Invoice, { foreignKey: 'invoice_id', as: 'invoice' });
 User.hasMany(Payment, { foreignKey: 'received_by', as: 'payments_received' });
@@ -333,6 +440,71 @@ Referral.belongsTo(Doctor, { foreignKey: 'from_doctor_id', as: 'from_doctor' });
 Doctor.hasMany(Referral, { foreignKey: 'to_doctor_id', as: 'referrals_received' });
 Referral.belongsTo(Doctor, { foreignKey: 'to_doctor_id', as: 'to_doctor' });
 
+// Emergency clinical operations. The encounter is the single owner of the
+// Emergency timeline; linked modules remain the source of truth for their own
+// records (investigations, prescriptions, invoices, beds and admissions).
+Patient.hasMany(EmergencyEncounter, { foreignKey: 'patient_id', as: 'emergency_encounters' });
+EmergencyEncounter.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+Department.hasMany(EmergencyEncounter, { foreignKey: 'department_id', as: 'emergency_encounters' });
+EmergencyEncounter.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
+Doctor.hasMany(EmergencyEncounter, { foreignKey: 'assigned_doctor_id', as: 'assigned_emergency_encounters' });
+EmergencyEncounter.belongsTo(Doctor, { foreignKey: 'assigned_doctor_id', as: 'assigned_doctor' });
+Bed.hasMany(EmergencyEncounter, { foreignKey: 'current_bed_id', as: 'current_emergency_encounters' });
+EmergencyEncounter.belongsTo(Bed, { foreignKey: 'current_bed_id', as: 'current_bed' });
+Admission.hasOne(EmergencyEncounter, { foreignKey: 'admission_id', as: 'emergency_encounter' });
+EmergencyEncounter.belongsTo(Admission, { foreignKey: 'admission_id', as: 'admission' });
+EmergencyEncounter.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+EmergencyEncounter.belongsTo(User, { foreignKey: 'updated_by', as: 'updater' });
+
+EmergencyEncounter.hasMany(EmergencyTriage, { foreignKey: 'emergency_encounter_id', as: 'triages' });
+EmergencyTriage.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'encounter' });
+EmergencyTriage.belongsTo(User, { foreignKey: 'triage_nurse_id', as: 'triage_nurse' });
+EmergencyTriage.belongsTo(VitalSign, { foreignKey: 'vital_sign_id', as: 'vital_sign' });
+
+EmergencyEncounter.hasMany(EmergencyDoctorAssignment, { foreignKey: 'emergency_encounter_id', as: 'doctor_assignments' });
+EmergencyDoctorAssignment.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'encounter' });
+EmergencyDoctorAssignment.belongsTo(Doctor, { foreignKey: 'doctor_id', as: 'doctor' });
+EmergencyDoctorAssignment.belongsTo(User, { foreignKey: 'assigned_by', as: 'assigner' });
+
+EmergencyEncounter.hasMany(EmergencyAssessment, { foreignKey: 'emergency_encounter_id', as: 'assessments' });
+EmergencyAssessment.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'encounter' });
+EmergencyAssessment.belongsTo(User, { foreignKey: 'assessed_by', as: 'assessor' });
+EmergencyAssessment.belongsTo(ClinicalNote, { foreignKey: 'clinical_note_id', as: 'clinical_note' });
+
+EmergencyEncounter.hasMany(EmergencyOrder, { foreignKey: 'emergency_encounter_id', as: 'emergency_orders' });
+EmergencyOrder.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'encounter' });
+EmergencyOrder.belongsTo(User, { foreignKey: 'requested_by', as: 'requester' });
+
+EmergencyEncounter.hasMany(EmergencyProcedure, { foreignKey: 'emergency_encounter_id', as: 'procedures' });
+EmergencyProcedure.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'encounter' });
+EmergencyProcedure.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
+EmergencyProcedure.belongsTo(ServicePrice, { foreignKey: 'service_price_id', as: 'service_price' });
+EmergencyProcedure.belongsTo(Invoice, { foreignKey: 'invoice_id', as: 'invoice' });
+EmergencyProcedure.belongsTo(User, { foreignKey: 'performed_by', as: 'performer' });
+EmergencyProcedure.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+
+EmergencyEncounter.hasMany(EmergencyObservation, { foreignKey: 'emergency_encounter_id', as: 'observations' });
+EmergencyObservation.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'encounter' });
+EmergencyObservation.belongsTo(Bed, { foreignKey: 'bed_id', as: 'bed' });
+EmergencyObservation.belongsTo(User, { foreignKey: 'assigned_by', as: 'assigner' });
+EmergencyObservation.belongsTo(User, { foreignKey: 'ended_by', as: 'ender' });
+
+EmergencyEncounter.hasMany(EmergencyDisposition, { foreignKey: 'emergency_encounter_id', as: 'dispositions' });
+EmergencyDisposition.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'encounter' });
+EmergencyDisposition.belongsTo(Admission, { foreignKey: 'admission_id', as: 'admission' });
+EmergencyDisposition.belongsTo(Referral, { foreignKey: 'referral_id', as: 'referral' });
+EmergencyDisposition.belongsTo(ApprovalRequest, { foreignKey: 'workflow_request_id', as: 'workflow_request' });
+EmergencyDisposition.belongsTo(User, { foreignKey: 'disposed_by', as: 'disposer' });
+
+EmergencyEncounter.hasMany(LabOrder, { foreignKey: 'emergency_encounter_id', as: 'lab_orders' });
+LabOrder.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'emergency_encounter' });
+EmergencyEncounter.hasMany(RadiologyOrder, { foreignKey: 'emergency_encounter_id', as: 'radiology_orders' });
+RadiologyOrder.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'emergency_encounter' });
+EmergencyEncounter.hasMany(Prescription, { foreignKey: 'emergency_encounter_id', as: 'prescriptions' });
+Prescription.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'emergency_encounter' });
+EmergencyEncounter.hasMany(Invoice, { foreignKey: 'emergency_encounter_id', as: 'invoices' });
+Invoice.belongsTo(EmergencyEncounter, { foreignKey: 'emergency_encounter_id', as: 'emergency_encounter' });
+
 // HR
 User.hasOne(Employee, { foreignKey: 'user_id', as: 'employee_profile' });
 Employee.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
@@ -355,11 +527,32 @@ module.exports = {
   RefreshToken,
   AuditLog,
 
+  Organization,
+  Hospital,
+  Branch,
   Department,
 
   Patient,
   Doctor,
   Appointment,
+  PatientAllergy,
+  PatientProblem,
+  PatientHistory,
+  VitalSign,
+  ClinicalNote,
+  WorkflowDefinition,
+  WorkflowStep,
+  ApprovalRequest,
+  ApprovalAction,
+
+  EmergencyEncounter,
+  EmergencyTriage,
+  EmergencyDoctorAssignment,
+  EmergencyAssessment,
+  EmergencyOrder,
+  EmergencyProcedure,
+  EmergencyObservation,
+  EmergencyDisposition,
 
   Ward,
   Bed,
@@ -418,4 +611,10 @@ module.exports = {
 
   Setting,
   MasterOption,
+  ServiceType,
+  ServiceCategory,
+  Service,
+  ServicePrice,
+  PricingRule,
+  ServiceSourceLink,
 };

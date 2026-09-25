@@ -314,6 +314,8 @@ const issueBag = async (input, currentUserId) => {
         lines: [{
           item_type: 'other',
           reference_id: issue.id,
+          service_source_type: 'blood_bag',
+          service_source_id: bag.id,
           description: `Blood issue ${bag.bag_code} (${bag.blood_group} ${bag.component})`,
           quantity: 1,
           unit_price: issuePrice,

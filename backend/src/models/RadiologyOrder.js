@@ -12,6 +12,7 @@ module.exports = (sequelize) => {
       order_code: { type: DataTypes.STRING(30), allowNull: false, unique: true },
       patient_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
       doctor_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+      emergency_encounter_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
       test_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
       ordered_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
       status: {

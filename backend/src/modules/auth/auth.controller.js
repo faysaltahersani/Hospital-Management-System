@@ -3,6 +3,7 @@
 const asyncHandler = require('../../utils/asyncHandler');
 const ApiResponse = require('../../utils/ApiResponse');
 const service = require('./auth.service');
+const { writeAuditLog } = require('../../middlewares/audit.middleware');
 
 const register = asyncHandler(async (req, res) => {
   const result = await service.register(req.body);
@@ -10,8 +11,32 @@ const register = asyncHandler(async (req, res) => {
 });
 
 const login = asyncHandler(async (req, res) => {
-  const result = await service.login(req.body);
-  return ApiResponse.success(res, result, 'Login successful');
+  try {
+    const result = await service.login(req.body);
+    await writeAuditLog({
+      userId: result.user?.id,
+      action: 'login',
+      entityType: 'authentication',
+      entityId: result.user?.id,
+      changes: { success: true, email: result.user?.email },
+      req,
+    });
+    return ApiResponse.success(res, result, 'Login successful');
+  } catch (error) {
+    await writeAuditLog({
+      userId: null,
+      action: 'login',
+      entityType: 'authentication',
+      entityId: null,
+      changes: {
+        success: false,
+        email: String(req.body?.email || req.body?.identifier || '').toLowerCase(),
+        reason: error.message,
+      },
+      req,
+    });
+    throw error;
+  }
 });
 
 const refresh = asyncHandler(async (req, res) => {

@@ -4,6 +4,7 @@ const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 const { verifyAccessToken } = require('../utils/jwt');
 const { User } = require('../models');
+const { runWithTenant, currentTenant } = require('../utils/tenantContext');
 
 const extractToken = (req) => {
   const header = req.headers.authorization || '';
@@ -17,7 +18,7 @@ const authenticate = asyncHandler(async (req, _res, next) => {
   // Idempotent: module routers call this too, and permission enforcement needs
   // req.user populated at the mount point. Re-verifying would double the
   // per-request user lookup for no benefit.
-  if (req.user) return next();
+  if (req.user) return currentTenant() ? next() : runWithTenant(req.user, next);
 
   const token = extractToken(req);
   if (!token) {
@@ -61,10 +62,14 @@ const authenticate = asyncHandler(async (req, _res, next) => {
     email: user.email,
     full_name: user.full_name,
     role: user.role,
+    organization_id: user.organization_id,
+    hospital_id: user.hospital_id,
+    branch_id: user.branch_id,
+    department_id: user.department_id,
     must_change_password: Boolean(user.must_change_password),
   };
   req.token = token;
-  next();
+  return runWithTenant(req.user, next);
 });
 
 module.exports = { authenticate };

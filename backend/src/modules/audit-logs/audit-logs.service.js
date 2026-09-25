@@ -6,6 +6,10 @@ const repository = require('./audit-logs.repository');
 
 const parseChanges = (record) => {
   const json = record.toJSON();
+  // Most HMS APIs expose snake_case timestamps. AuditLog relies on Sequelize's
+  // default `createdAt` attribute, so normalize it here as well. Without this,
+  // the security activity screen receives the row but renders an empty time.
+  json.created_at = json.created_at || json.createdAt || null;
   if (!json.changes) return json;
   try {
     json.changes = JSON.parse(json.changes);

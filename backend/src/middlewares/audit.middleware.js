@@ -86,6 +86,29 @@ const ENTITY_MODEL = Object.freeze({
   expense: 'Expense',
   setting: 'Setting',
   master_option: 'MasterOption',
+  organization: 'Organization',
+  hospital: 'Hospital',
+  branch: 'Branch',
+  patient_allergy: 'PatientAllergy',
+  patient_problem: 'PatientProblem',
+  patient_history: 'PatientHistory',
+  vital_sign: 'VitalSign',
+  clinical_note: 'ClinicalNote',
+  workflow_definition: 'WorkflowDefinition',
+  approval_request: 'ApprovalRequest',
+  service_type: 'ServiceType',
+  service_category: 'ServiceCategory',
+  service: 'Service',
+  service_price: 'ServicePrice',
+  pricing_rule: 'PricingRule',
+  emergency_encounter: 'EmergencyEncounter',
+  emergency_triage: 'EmergencyTriage',
+  emergency_doctor_assignment: 'EmergencyDoctorAssignment',
+  emergency_assessment: 'EmergencyAssessment',
+  emergency_order: 'EmergencyOrder',
+  emergency_procedure: 'EmergencyProcedure',
+  emergency_observation: 'EmergencyObservation',
+  emergency_disposition: 'EmergencyDisposition',
 });
 
 const capturePriorState = async (action, entityType, id) => {
@@ -105,6 +128,7 @@ const capturePriorState = async (action, entityType, id) => {
 };
 
 const audit = (action, entityType) => (req, res, next) => {
+  const resolvedEntityType = typeof entityType === 'function' ? entityType(req) : entityType;
   const send = res.send.bind(res);
   // BUG-034 — the id used to be read only from the response body, but delete
   // handlers respond with `data: null`, so all 41 delete entries in the shipped
@@ -113,14 +137,14 @@ const audit = (action, entityType) => (req, res, next) => {
   const paramId = req.params?.id ?? null;
   // Started now, awaited inside the write, so the read happens before the
   // handler mutates or removes the row.
-  const priorStatePromise = capturePriorState(action, entityType, paramId);
+  const priorStatePromise = capturePriorState(action, resolvedEntityType, paramId);
 
   res.send = function patched(body) {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       let entityId = null;
       try {
         const parsed = typeof body === 'string' ? JSON.parse(body) : body;
-        entityId = parsed?.data?.id || parsed?.data?.[entityType]?.id || null;
+        entityId = parsed?.data?.id || parsed?.data?.[resolvedEntityType]?.id || null;
       } catch (_) {
         entityId = null;
       }
@@ -132,7 +156,7 @@ const audit = (action, entityType) => (req, res, next) => {
           writeAuditLog({
             userId: req.user?.id,
             action,
-            entityType,
+            entityType: resolvedEntityType,
             entityId,
             changes: {
               ...(req.body && Object.keys(req.body).length > 0 ? { request: req.body } : {}),

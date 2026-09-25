@@ -6,6 +6,22 @@ const { parsePaging, buildMeta } = require('../../utils/pagination');
 const { ROLE_VALUES } = require('../../config/constants');
 const repository = require('./users.repository');
 
+const getScopeFromBranch = async (branchId) => {
+  if (!branchId) return null;
+  const { Branch, Hospital } = require('../../models');
+  const branch = await Branch.findByPk(branchId, {
+    include: [{ model: Hospital, as: 'hospital', attributes: ['id', 'organization_id', 'is_active'] }],
+  });
+  if (!branch || !branch.is_active || !branch.hospital?.is_active) {
+    throw ApiError.badRequest('Active branch not found');
+  }
+  return {
+    organization_id: branch.hospital.organization_id,
+    hospital_id: branch.hospital_id,
+    branch_id: branch.id,
+  };
+};
+
 const list = async (query) => {
   const { page, limit, offset } = parsePaging(query);
   const filters = {};
@@ -30,13 +46,18 @@ const getById = async (id) => {
   return user.toJSON();
 };
 
-const create = async (input) => {
+const create = async (input, actor = {}) => {
   const exists = await repository.findByEmail(input.email);
   if (exists) throw ApiError.conflict('Email is already registered');
 
   const fullName = (input.full_name || input.username || input.email.split('@')[0]).trim();
   const roleValue = (input.role || 'receptionist').toLowerCase().trim();
   const password_hash = await hashPassword(input.password);
+
+  const selectedScope = await getScopeFromBranch(input.branch_id);
+  const inheritedScope = actor.branch_id
+    ? { organization_id: actor.organization_id, hospital_id: actor.hospital_id, branch_id: actor.branch_id }
+    : {};
 
   const user = await repository.create({
     email: input.email,
@@ -47,6 +68,7 @@ const create = async (input) => {
       : 'receptionist',
     phone: input.phone || null,
     is_active: input.is_active !== false,
+    ...(selectedScope || inheritedScope),
   });
   return user.toJSON();
 };
@@ -71,6 +93,20 @@ const update = async (id, changes) => {
   if (!payload.full_name && changes.username) {
     payload.full_name = changes.username;
   }
+  if (changes.branch_id !== undefined) {
+    if (changes.branch_id === null || changes.branch_id === '') {
+      payload.organization_id = null;
+      payload.hospital_id = null;
+      payload.branch_id = null;
+    } else {
+      Object.assign(payload, await getScopeFromBranch(changes.branch_id));
+    }
+  }
+  delete payload.branch;
+  delete payload.role_id;
+  delete payload.user_type_ids;
+  delete payload.user_type_id;
+  delete payload.is_two_factor_enabled;
   // BUG-040 — `role` had no enum validation on update (unlike create), so an
   // arbitrary string reached the ENUM column and could store '' in non-strict
   // MySQL, locking the account out of every authorize() check.
@@ -114,8 +150,8 @@ const getUserPermissions = async (userId) => {
   try {
     const list = JSON.parse(opt.description || '[]');
     return (Array.isArray(list) ? list : [])
-      .map((item) => (typeof item === 'string' ? item : item?.permission_key || ''))
-      .filter(Boolean);
+      .map((item) => (typeof item === 'string' ? { permission_key: item, can_read: true } : item))
+      .filter((item) => item?.permission_key);
   } catch {
     return [];
   }
@@ -137,6 +173,12 @@ const normalizePermissionEntry = (item) => {
   if (item.can_create !== undefined) entry.can_create = Boolean(item.can_create);
   if (item.can_update !== undefined) entry.can_update = Boolean(item.can_update);
   if (item.can_delete !== undefined) entry.can_delete = Boolean(item.can_delete);
+  if (item.can_approve !== undefined) entry.can_approve = Boolean(item.can_approve);
+  if (item.can_reject !== undefined) entry.can_reject = Boolean(item.can_reject);
+  if (item.can_print !== undefined) entry.can_print = Boolean(item.can_print);
+  if (item.can_export !== undefined) entry.can_export = Boolean(item.can_export);
+  if (item.can_refund !== undefined) entry.can_refund = Boolean(item.can_refund);
+  if (item.can_access_sensitive !== undefined) entry.can_access_sensitive = Boolean(item.can_access_sensitive);
   return entry;
 };
 
@@ -170,7 +212,31 @@ const setUserPermissions = async (userId, permissions = []) => {
   await opt.update({ description: JSON.stringify(cleanList) });
   invalidateUser(userId);
 
-  return cleanList;
+  // Preserve the legacy PUT response contract (string keys) while storing the
+  // richer action matrix. GET /permissions returns the full objects used by
+  // the new editor; existing clients that only inspect the save response keep
+  // working unchanged.
+  return cleanList.map((entry) => entry.permission_key);
 };
 
-module.exports = { list, getById, create, update, remove, getUserPermissions, setUserPermissions };
+const getMeta = async () => {
+  const { Branch, Hospital } = require('../../models');
+  const branches = await Branch.findAll({
+    where: { is_active: true },
+    include: [{ model: Hospital, as: 'hospital', attributes: ['id', 'name'], required: true }],
+    order: [['is_main', 'DESC'], ['name', 'ASC']],
+  });
+  return {
+    roles: ROLE_VALUES.map((slug, index) => ({ id: index + 1, name: slug.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase()), slug })),
+    user_types: [
+      { id: 1, name: 'Reader', slug: 'reader' },
+      { id: 2, name: 'Creator', slug: 'creator' },
+      { id: 3, name: 'Updater', slug: 'updater' },
+      { id: 4, name: 'Deleter', slug: 'deleter' },
+      { id: 5, name: 'Approver', slug: 'approver' },
+    ],
+    branches: branches.map((row) => ({ id: row.id, name: row.name, code: row.code, hospital: row.hospital })),
+  };
+};
+
+module.exports = { list, getById, create, update, remove, getUserPermissions, setUserPermissions, getMeta };

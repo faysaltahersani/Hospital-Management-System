@@ -135,8 +135,8 @@ const createOrder = async (input, currentUserId) => {
   return (await repository.findOrderById(order.id)).toJSON();
 };
 
-const createBill = async (input, currentUserId) => {
-  return sequelize.transaction(async (t) => {
+const createBill = async (input, currentUserId, options = {}) => {
+  const work = async (t) => {
     const patient = await Patient.findByPk(input.patient_id, { transaction: t });
     if (!patient) throw ApiError.badRequest('Patient not found');
 
@@ -165,6 +165,7 @@ const createBill = async (input, currentUserId) => {
             order_code,
             patient_id: input.patient_id,
             doctor_id: doctorId,
+            emergency_encounter_id: input.emergency_encounter_id || null,
             test_id: test.id,
             ordered_at: input.ordered_at || new Date(),
             status: RADIOLOGY_ORDER_STATUS.ORDERED,
@@ -187,10 +188,15 @@ const createBill = async (input, currentUserId) => {
       models: { Invoice, InvoiceItem, Payment },
       transaction: t,
       patientId: input.patient_id,
-      link: { radiology_order_id: createdOrders[0]?.id || null },
+      link: {
+        radiology_order_id: createdOrders[0]?.id || null,
+        emergency_encounter_id: input.emergency_encounter_id || null,
+      },
       lines: createdOrders.map((o) => ({
         item_type: 'radiology',
         reference_id: o.id,
+        service_source_type: 'radiology_test',
+        service_source_id: o.test_id,
         description: `Radiology - ${o.test?.name || o.order_code}`,
         quantity: 1,
         unit_price: o.price,
@@ -213,7 +219,8 @@ const createBill = async (input, currentUserId) => {
       due_amount: money.subFloor(invoice.total, invoice.paid_amount),
       orders: createdOrders,
     };
-  });
+  };
+  return options.transaction ? work(options.transaction) : sequelize.transaction(work);
 };
 
 // BUG-037 — order status used to accept any enum value in any direction, so a

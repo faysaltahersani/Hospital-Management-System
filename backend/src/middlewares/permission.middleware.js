@@ -16,28 +16,10 @@
 //   * A user WITH a stored profile must hold at least one permission in the
 //     module's group, in addition to passing the role check.
 //
-// Granularity — module level, and that is the documented requirement, not a gap
-// left unfixed. Checked before deciding to leave it as-is:
-//   * Hospital_Management_System_Documentation.pdf (all 253 text lines extracted)
-//     mentions authorisation exactly twice: "Security Protocol: JWT Access
-//     Tokens, Refresh Tokens, Joi Validation, RBAC Guards & Audit Logging" and
-//     "Role Access Summary: Shows MODULE permissions assigned to current user
-//     role". Neither asks for per-action rights.
-//   * README.md contains no permission requirement at all.
-//   * The administrator UI (UserAccessPage) offers ONE checkbox per menu item
-//     and posts `can_read: true` hardcoded — there is no create/edit/delete
-//     matrix to enforce, and no stored record has ever carried one.
-// So enforcement here is exactly as granular as the specification and the UI:
-// holding any permission in a module's group authorises that module's endpoints,
-// subject to the role check as well.
-//
-// Documented limitation (not a vulnerability): a user granted, say,
-// `patient_patient_entry` can also reach the patient module's update and delete
-// endpoints. Narrowing that would require per-action permission records, a
-// per-action editing UI, and an administrative decision about what each existing
-// profile should map onto — a specification change, not a bug fix. Until such a
-// requirement exists, the enforced policy and the displayed policy agree, which
-// is the property that matters: the frontend menu is no longer the only gate.
+// Enterprise action permissions are enforced from the request method and
+// workflow path. Old profiles that only contain `can_read` remain compatible;
+// as soon as an administrator saves the new permission matrix, explicit action
+// flags become authoritative for that profile.
 
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -46,7 +28,7 @@ const { ROLES } = require('../config/constants');
 const { groupsForModule, keyMatchesGroup } = require('../config/permissions');
 
 const CACHE_TTL_MS = 30_000;
-const cache = new Map(); // userId -> { keys: string[] | null, expiresAt: number }
+const cache = new Map(); // userId -> { entries: object[] | null, expiresAt: number }
 
 const invalidateUser = (userId) => {
   cache.delete(String(userId));
@@ -57,34 +39,82 @@ const invalidateAll = () => {
 };
 
 // Returns null when the user has no permission profile at all (role-only
-// access), or an array of permission keys when a profile exists — including an
+// access), or an array of permission entries when a profile exists — including an
 // empty array, which is a real, restrictive "no access" profile.
-const loadPermissionKeys = async (userId) => {
+const loadPermissionEntries = async (userId) => {
   const cached = cache.get(String(userId));
-  if (cached && cached.expiresAt > Date.now()) return cached.keys;
+  if (cached && cached.expiresAt > Date.now()) return cached.entries;
 
   const { MasterOption } = require('../models');
   const option = await MasterOption.findOne({
     where: { type: 'user_permission', code: `PERM-${userId}` },
   });
 
-  let keys = null;
+  let entries = null;
   if (option) {
     try {
       const parsed = JSON.parse(option.description || '[]');
-      keys = (Array.isArray(parsed) ? parsed : [])
-        .map((item) => (typeof item === 'string' ? item : item?.permission_key || ''))
-        .filter(Boolean);
+      entries = (Array.isArray(parsed) ? parsed : [])
+        .map((item) => (typeof item === 'string' ? { permission_key: item, can_read: true, legacy: true } : item))
+        .filter((item) => item?.permission_key);
     } catch (err) {
       // A corrupt profile must not silently widen access. Treat it as an empty
       // (deny-all) profile and make the problem visible.
       logger.warn(`Unparseable permission profile for user ${userId}; denying module access`);
-      keys = [];
+      entries = [];
     }
   }
 
-  cache.set(String(userId), { keys, expiresAt: Date.now() + CACHE_TTL_MS });
-  return keys;
+  cache.set(String(userId), { entries, expiresAt: Date.now() + CACHE_TTL_MS });
+  return entries;
+};
+
+// Kept as a compatibility export for existing callers and tests that consume
+// the historical string-key API. Enforcement uses the richer entry objects.
+const loadPermissionKeys = async (userId) => {
+  const entries = await loadPermissionEntries(userId);
+  return entries === null ? null : entries.map((entry) => entry.permission_key);
+};
+
+const actionForRequest = (req) => {
+  const path = String(req.originalUrl || req.path || '').toLowerCase();
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    if (/\/export|\/download/.test(path)) return 'export';
+    if (/\/print/.test(path)) return 'print';
+    return 'read';
+  }
+  if (/\/refund|sales-returns?|purchase-returns?/.test(path)) return 'refund';
+  if (/\/reject/.test(path)) return 'reject';
+  if (/\/approve|\/verify|\/finalize/.test(path)) return 'approve';
+  if (req.method === 'POST') return 'create';
+  if (req.method === 'PUT' || req.method === 'PATCH') return 'update';
+  if (req.method === 'DELETE') return 'delete';
+  return 'read';
+};
+
+const ACTION_FIELDS = new Set([
+  'can_create',
+  'can_update',
+  'can_delete',
+  'can_approve',
+  'can_reject',
+  'can_print',
+  'can_export',
+  'can_refund',
+  'can_access_sensitive',
+]);
+
+const isLegacyEntry = (entry) =>
+  entry?.legacy || !Object.keys(entry || {}).some((field) => ACTION_FIELDS.has(field));
+
+const matchingEntries = async (req, moduleName) => {
+  const groups = groupsForModule(moduleName);
+  if (!groups) return null;
+  const entries = await loadPermissionEntries(req.user.id);
+  if (entries === null) return null;
+  return entries.filter((entry) =>
+    groups.some((group) => keyMatchesGroup(entry.permission_key, group))
+  );
 };
 
 const requireModulePermission = (moduleName) => {
@@ -92,23 +122,69 @@ const requireModulePermission = (moduleName) => {
 
   return asyncHandler(async (req, _res, next) => {
     if (!req.user) throw ApiError.unauthorized('Authentication required');
-    if (req.user.role === ROLES.ADMIN) return next();
+    if ([ROLES.SUPER_ADMIN, ROLES.ADMIN].includes(req.user.role)) return next();
     if (!groups) return next(); // module carries no menu-level permission
 
-    const keys = await loadPermissionKeys(req.user.id);
-    if (keys === null) return next(); // no profile -> role-only, unchanged behaviour
-
-    const allowed = keys.some((key) => groups.some((group) => keyMatchesGroup(key, group)));
-    if (!allowed) {
+    const matching = await matchingEntries(req, moduleName);
+    if (matching === null) return next(); // no profile -> role-only, unchanged behaviour
+    if (!matching.length) {
       throw ApiError.forbidden(`You do not have permission to access the ${moduleName} module`);
+    }
+
+    const action = actionForRequest(req);
+    const field = `can_${action}`;
+    const allowed = matching.some((entry) => {
+      if (action === 'read') return entry.can_read !== false;
+      if (isLegacyEntry(entry)) return entry.can_read !== false;
+      return entry[field] === true;
+    });
+    if (!allowed) {
+      throw ApiError.forbidden(`You do not have ${action} permission for the ${moduleName} module`);
     }
     return next();
   });
 };
 
+const requireSensitiveDataPermission = (moduleName) =>
+  asyncHandler(async (req, _res, next) => {
+    if (!req.user) throw ApiError.unauthorized('Authentication required');
+    if ([ROLES.SUPER_ADMIN, ROLES.ADMIN].includes(req.user.role)) return next();
+    const matching = await matchingEntries(req, moduleName);
+    if (matching === null || matching.some(isLegacyEntry)) return next();
+    if (!matching.some((entry) => entry.can_access_sensitive === true)) {
+      throw ApiError.forbidden(`You do not have sensitive-data permission for the ${moduleName} module`);
+    }
+    return next();
+  });
+
+// Route-level permission for clinical workflows that need finer control than
+// a whole menu group (for example triage versus doctor assessment). Users with
+// no saved profile keep the established role-only behaviour; once a profile is
+// saved, the exact permission row and requested action become authoritative.
+const requirePermissionKey = (permissionKey, action = null) =>
+  asyncHandler(async (req, _res, next) => {
+    if (!req.user) throw ApiError.unauthorized('Authentication required');
+    if ([ROLES.SUPER_ADMIN, ROLES.ADMIN].includes(req.user.role)) return next();
+    const entries = await loadPermissionEntries(req.user.id);
+    if (entries === null) return next();
+    const entry = entries.find((item) => String(item.permission_key).toLowerCase() === String(permissionKey).toLowerCase());
+    if (!entry || entry.can_read === false) {
+      throw ApiError.forbidden(`You do not have permission for ${permissionKey}`);
+    }
+    const resolvedAction = action || actionForRequest(req);
+    if (resolvedAction !== 'read' && !isLegacyEntry(entry) && entry[`can_${resolvedAction}`] !== true) {
+      throw ApiError.forbidden(`You do not have ${resolvedAction} permission for ${permissionKey}`);
+    }
+    return next();
+  });
+
 module.exports = {
   requireModulePermission,
   loadPermissionKeys,
+  loadPermissionEntries,
   invalidateUser,
   invalidateAll,
+  actionForRequest,
+  requireSensitiveDataPermission,
+  requirePermissionKey,
 };

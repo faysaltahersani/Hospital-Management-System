@@ -23,6 +23,8 @@ const {
   OpdVisit,
 } = require('../../models');
 const repository = require('./opd.repository');
+const { currentTenant } = require('../../utils/tenantContext');
+const serviceCatalog = require('../service-catalog/service-catalog.service');
 
 // BUG-054 - exact money throughout the OPD billing path.
 const money = require('../../utils/money');
@@ -289,9 +291,22 @@ const createBill = async (input, currentUserId) =>
       const doctor = await Doctor.findByPk(input.doctor_id, { transaction: t });
       if (!doctor) throw ApiError.badRequest('Doctor not found');
 
-      const consultationFee = toMoney(
+      let consultationFee = toMoney(
         input.consultation_fee !== undefined ? input.consultation_fee : doctor.consultation_fee
       );
+      let cataloguePrice = null;
+      if (currentTenant()) {
+        try {
+          cataloguePrice = await serviceCatalog.resolveSourcePrice(
+            { source_type: 'doctor', source_id: doctor.id, payer_type: input.payer_type || 'self', payer_reference: input.payer_reference || null, at: input.visit_date },
+            currentTenant(),
+            { transaction: t }
+          );
+          if (cataloguePrice) consultationFee = toMoney(cataloguePrice.amount);
+        } catch (error) {
+          if (error.statusCode !== 404) throw error;
+        }
+      }
       if (consultationFee < 0) throw ApiError.badRequest('Consultation fee cannot be negative');
 
       // Server-side money. Discount may arrive as an absolute amount or a
@@ -378,6 +393,9 @@ const createBill = async (input, currentUserId) =>
           quantity: 1,
           unit_price: consultationFee,
           total_price: consultationFee,
+          service_id: cataloguePrice?.service_id || null,
+          service_price_id: cataloguePrice?.service_price_id || null,
+          pricing_snapshot: cataloguePrice ? { ...cataloguePrice, captured_at: new Date().toISOString() } : null,
         },
         { transaction: t }
       );

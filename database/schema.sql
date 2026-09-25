@@ -1,8 +1,3 @@
--- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
---
--- Host: 127.0.0.1    Database: hospital_management
--- ------------------------------------------------------
--- Server version	10.4.32-MariaDB
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -14,11 +9,6 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- Table structure for table `admission_payments`
---
-
 DROP TABLE IF EXISTS `admission_payments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -41,11 +31,6 @@ CREATE TABLE `admission_payments` (
   CONSTRAINT `admission_payments_user_fk` FOREIGN KEY (`received_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `admissions`
---
-
 DROP TABLE IF EXISTS `admissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -68,6 +53,10 @@ CREATE TABLE `admissions` (
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
   `notes_migration_backup` text DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `department_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `admission_code` (`admission_code`),
   KEY `admissions_patient_id` (`patient_id`),
@@ -77,18 +66,21 @@ CREATE TABLE `admissions` (
   KEY `admissions_admitted_at` (`admitted_at`),
   KEY `ward_id` (`ward_id`),
   KEY `created_by` (`created_by`),
+  KEY `idx_admissions_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_admissions_hospital` (`hospital_id`),
+  KEY `fk_admissions_branch` (`branch_id`),
+  KEY `idx_admissions_department` (`department_id`),
   CONSTRAINT `admissions_ibfk_73` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `admissions_ibfk_74` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `admissions_ibfk_75` FOREIGN KEY (`ward_id`) REFERENCES `wards` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `admissions_ibfk_76` FOREIGN KEY (`bed_id`) REFERENCES `beds` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `admissions_ibfk_77` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  CONSTRAINT `admissions_ibfk_77` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_admissions_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_admissions_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_admissions_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_admissions_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `ambulance_trips`
---
-
 DROP TABLE IF EXISTS `ambulance_trips`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -111,21 +103,25 @@ CREATE TABLE `ambulance_trips` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `trip_code` (`trip_code`),
   KEY `ambulance_trips_ambulance_id` (`ambulance_id`),
   KEY `ambulance_trips_patient_id` (`patient_id`),
   KEY `ambulance_trips_status` (`status`),
   KEY `ambulance_trips_dispatched_at` (`dispatched_at`),
+  KEY `idx_ambulance_trips_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_ambulance_trips_hospital` (`hospital_id`),
+  KEY `fk_ambulance_trips_branch` (`branch_id`),
   CONSTRAINT `ambulance_trips_ibfk_37` FOREIGN KEY (`ambulance_id`) REFERENCES `ambulances` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `ambulance_trips_ibfk_38` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=82 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  CONSTRAINT `ambulance_trips_ibfk_38` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_ambulance_trips_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_ambulance_trips_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_ambulance_trips_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=90 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `ambulances`
---
-
 DROP TABLE IF EXISTS `ambulances`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -144,16 +140,20 @@ CREATE TABLE `ambulances` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `vehicle_number` (`vehicle_number`),
-  KEY `ambulances_status` (`status`)
+  KEY `ambulances_status` (`status`),
+  KEY `idx_ambulances_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_ambulances_hospital` (`hospital_id`),
+  KEY `fk_ambulances_branch` (`branch_id`),
+  CONSTRAINT `fk_ambulances_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_ambulances_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_ambulances_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `appointments`
---
-
 DROP TABLE IF EXISTS `appointments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -174,6 +174,9 @@ CREATE TABLE `appointments` (
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
   `active_slot_key` varchar(64) GENERATED ALWAYS AS (case when `deleted_at` is null and `status` in ('scheduled','confirmed','in_progress') then concat(`doctor_id`,'|',`appointment_date`,'|',`appointment_time`) else NULL end) STORED,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `appointment_code` (`appointment_code`),
   UNIQUE KEY `uk_appointments_active_slot` (`active_slot_key`),
@@ -183,17 +186,80 @@ CREATE TABLE `appointments` (
   KEY `appointments_status` (`status`),
   KEY `department_id` (`department_id`),
   KEY `created_by` (`created_by`),
+  KEY `idx_appointments_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_appointments_hospital` (`hospital_id`),
+  KEY `fk_appointments_branch` (`branch_id`),
   CONSTRAINT `appointments_ibfk_73` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `appointments_ibfk_74` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `appointments_ibfk_75` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `appointments_ibfk_76` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=260 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  CONSTRAINT `appointments_ibfk_76` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_appointments_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_appointments_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_appointments_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=261 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `attendance`
---
-
+DROP TABLE IF EXISTS `approval_actions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `approval_actions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `approval_request_id` bigint(20) unsigned NOT NULL,
+  `workflow_step_id` bigint(20) unsigned DEFAULT NULL,
+  `step_order` smallint(5) unsigned DEFAULT NULL,
+  `action` enum('submit','approve','reject','comment','cancel') NOT NULL,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `comments` text DEFAULT NULL,
+  `metadata` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`metadata`)),
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_approval_action_request` (`approval_request_id`,`created_at`),
+  KEY `idx_approval_action_step` (`workflow_step_id`,`action`),
+  KEY `idx_approval_action_user` (`user_id`),
+  CONSTRAINT `fk_approval_action_request` FOREIGN KEY (`approval_request_id`) REFERENCES `approval_requests` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_approval_action_step` FOREIGN KEY (`workflow_step_id`) REFERENCES `workflow_steps` (`id`),
+  CONSTRAINT `fk_approval_action_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `approval_requests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `approval_requests` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `workflow_definition_id` bigint(20) unsigned NOT NULL,
+  `organization_id` bigint(20) unsigned NOT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `request_code` varchar(70) NOT NULL,
+  `entity_type` varchar(80) NOT NULL,
+  `entity_id` varchar(80) DEFAULT NULL,
+  `title` varchar(220) NOT NULL,
+  `description` text DEFAULT NULL,
+  `amount` decimal(14,2) DEFAULT NULL,
+  `currency_code` char(3) NOT NULL DEFAULT 'BDT',
+  `status` enum('draft','submitted','in_review','approved','rejected','cancelled') NOT NULL DEFAULT 'draft',
+  `current_step_order` smallint(5) unsigned DEFAULT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payload`)),
+  `requested_by` bigint(20) unsigned NOT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_approval_request_code` (`request_code`),
+  KEY `idx_approval_org_status` (`organization_id`,`status`),
+  KEY `idx_approval_branch_status` (`branch_id`,`status`),
+  KEY `idx_approval_definition` (`workflow_definition_id`),
+  KEY `idx_approval_entity` (`entity_type`,`entity_id`),
+  KEY `idx_approval_requester` (`requested_by`),
+  KEY `fk_approval_hospital` (`hospital_id`),
+  CONSTRAINT `fk_approval_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_approval_definition` FOREIGN KEY (`workflow_definition_id`) REFERENCES `workflow_definitions` (`id`),
+  CONSTRAINT `fk_approval_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_approval_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_approval_requester` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `attendance`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -208,18 +274,22 @@ CREATE TABLE `attendance` (
   `notes` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `attendance_employee_id_attendance_date` (`employee_id`,`attendance_date`),
   KEY `attendance_attendance_date` (`attendance_date`),
   KEY `attendance_status` (`status`),
-  CONSTRAINT `attendance_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  KEY `idx_attendance_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_attendance_hospital` (`hospital_id`),
+  KEY `fk_attendance_branch` (`branch_id`),
+  CONSTRAINT `attendance_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_attendance_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_attendance_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_attendance_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `audit_logs`
---
-
 DROP TABLE IF EXISTS `audit_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -238,13 +308,8 @@ CREATE TABLE `audit_logs` (
   KEY `audit_logs_entity_type_entity_id` (`entity_type`,`entity_id`),
   KEY `audit_logs_action` (`action`),
   CONSTRAINT `audit_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2442 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2959 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `beds`
---
-
 DROP TABLE IF EXISTS `beds`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -260,17 +325,21 @@ CREATE TABLE `beds` (
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
   `status_before_reconciliation` varchar(30) DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `beds_ward_id_bed_number` (`ward_id`,`bed_number`),
   KEY `beds_status` (`status`),
-  CONSTRAINT `beds_ibfk_1` FOREIGN KEY (`ward_id`) REFERENCES `wards` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  KEY `idx_beds_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_beds_hospital` (`hospital_id`),
+  KEY `fk_beds_branch` (`branch_id`),
+  CONSTRAINT `beds_ibfk_1` FOREIGN KEY (`ward_id`) REFERENCES `wards` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_beds_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_beds_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_beds_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `blood_bags`
---
-
 DROP TABLE IF EXISTS `blood_bags`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -293,20 +362,24 @@ CREATE TABLE `blood_bags` (
   `screened_at` datetime DEFAULT NULL,
   `screened_by` bigint(20) unsigned DEFAULT NULL,
   `screening_notes` varchar(500) DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `bag_code` (`bag_code`),
   KEY `blood_bags_donor_id` (`donor_id`),
   KEY `blood_bags_blood_group` (`blood_group`),
   KEY `blood_bags_status` (`status`),
   KEY `blood_bags_expires_at` (`expires_at`),
-  CONSTRAINT `blood_bags_ibfk_1` FOREIGN KEY (`donor_id`) REFERENCES `blood_donors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  KEY `idx_blood_bags_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_blood_bags_hospital` (`hospital_id`),
+  KEY `fk_blood_bags_branch` (`branch_id`),
+  CONSTRAINT `blood_bags_ibfk_1` FOREIGN KEY (`donor_id`) REFERENCES `blood_donors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_blood_bags_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_blood_bags_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_blood_bags_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `blood_donors`
---
-
 DROP TABLE IF EXISTS `blood_donors`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -328,18 +401,22 @@ CREATE TABLE `blood_donors` (
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
   `guardian_contact_no` varchar(30) DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `donor_code` (`donor_code`),
   KEY `blood_donors_full_name` (`full_name`),
   KEY `blood_donors_blood_group` (`blood_group`),
-  KEY `blood_donors_phone` (`phone`)
+  KEY `blood_donors_phone` (`phone`),
+  KEY `idx_blood_donors_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_blood_donors_hospital` (`hospital_id`),
+  KEY `fk_blood_donors_branch` (`branch_id`),
+  CONSTRAINT `fk_blood_donors_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_blood_donors_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_blood_donors_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `blood_issues`
---
-
 DROP TABLE IF EXISTS `blood_issues`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -356,20 +433,87 @@ CREATE TABLE `blood_issues` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `issue_code` (`issue_code`),
   KEY `blood_issues_bag_id` (`bag_id`),
   KEY `blood_issues_patient_id` (`patient_id`),
   KEY `blood_issues_issued_at` (`issued_at`),
+  KEY `idx_blood_issues_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_blood_issues_hospital` (`hospital_id`),
+  KEY `fk_blood_issues_branch` (`branch_id`),
   CONSTRAINT `blood_issues_ibfk_37` FOREIGN KEY (`bag_id`) REFERENCES `blood_bags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `blood_issues_ibfk_38` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  CONSTRAINT `blood_issues_ibfk_38` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_blood_issues_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_blood_issues_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_blood_issues_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `code_sequences`
---
-
+DROP TABLE IF EXISTS `branches`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `branches` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `hospital_id` bigint(20) unsigned NOT NULL,
+  `code` varchar(40) NOT NULL,
+  `name` varchar(180) NOT NULL,
+  `phone` varchar(30) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `is_main` tinyint(1) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_branches_hospital_code` (`hospital_id`,`code`),
+  KEY `idx_branches_hospital_name` (`hospital_id`,`name`),
+  KEY `idx_branches_active` (`is_active`),
+  KEY `fk_branches_created_by` (`created_by`),
+  KEY `fk_branches_updated_by` (`updated_by`),
+  CONSTRAINT `fk_branches_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_branches_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_branches_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `clinical_notes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `clinical_notes` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_id` bigint(20) unsigned NOT NULL,
+  `encounter_type` varchar(30) DEFAULT NULL,
+  `encounter_id` bigint(20) unsigned DEFAULT NULL,
+  `note_type` enum('doctor','nursing','progress','assessment','procedure','follow_up','discharge') NOT NULL DEFAULT 'progress',
+  `title` varchar(220) NOT NULL,
+  `content` longtext NOT NULL,
+  `status` enum('draft','final','amended') NOT NULL DEFAULT 'draft',
+  `author_id` bigint(20) unsigned NOT NULL,
+  `finalized_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_clinical_notes_patient_time` (`patient_id`,`created_at`),
+  KEY `idx_clinical_notes_encounter` (`encounter_type`,`encounter_id`),
+  KEY `idx_clinical_notes_author` (`author_id`),
+  KEY `idx_clinical_notes_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_clinical_notes_hospital` (`hospital_id`),
+  KEY `fk_clinical_notes_branch` (`branch_id`),
+  CONSTRAINT `fk_clinical_notes_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_clinical_notes_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_clinical_notes_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_clinical_notes_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_clinical_notes_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `code_sequences`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -380,11 +524,6 @@ CREATE TABLE `code_sequences` (
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `contra_entries`
---
-
 DROP TABLE IF EXISTS `contra_entries`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -401,18 +540,22 @@ CREATE TABLE `contra_entries` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `contra_entries_code` (`contra_code`),
   KEY `contra_entries_date` (`transaction_date`),
   KEY `contra_entries_from` (`from_account_id`),
-  KEY `contra_entries_to` (`to_account_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `contra_entries_to` (`to_account_id`),
+  KEY `idx_contra_entries_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_contra_entries_hospital` (`hospital_id`),
+  KEY `fk_contra_entries_branch` (`branch_id`),
+  CONSTRAINT `fk_contra_entries_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_contra_entries_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_contra_entries_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=72 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `departments`
---
-
 DROP TABLE IF EXISTS `departments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -425,16 +568,20 @@ CREATE TABLE `departments` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`),
-  UNIQUE KEY `code` (`code`)
+  UNIQUE KEY `code` (`code`),
+  KEY `idx_departments_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_departments_hospital` (`hospital_id`),
+  KEY `fk_departments_branch` (`branch_id`),
+  CONSTRAINT `fk_departments_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_departments_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_departments_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `diagnostic_attachments`
---
-
 DROP TABLE IF EXISTS `diagnostic_attachments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -486,11 +633,6 @@ CREATE TABLE `diagnostic_attachments` (
   CONSTRAINT `fk_da_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `diagnostic_findings`
---
-
 DROP TABLE IF EXISTS `diagnostic_findings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -511,11 +653,6 @@ CREATE TABLE `diagnostic_findings` (
   CONSTRAINT `fk_df_study` FOREIGN KEY (`study_id`) REFERENCES `diagnostic_studies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `diagnostic_imaging_series`
---
-
 DROP TABLE IF EXISTS `diagnostic_imaging_series`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -540,11 +677,6 @@ CREATE TABLE `diagnostic_imaging_series` (
   CONSTRAINT `fk_dis_study` FOREIGN KEY (`study_id`) REFERENCES `diagnostic_studies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `diagnostic_measurements`
---
-
 DROP TABLE IF EXISTS `diagnostic_measurements`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -570,11 +702,6 @@ CREATE TABLE `diagnostic_measurements` (
   CONSTRAINT `fk_dm_study` FOREIGN KEY (`study_id`) REFERENCES `diagnostic_studies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `diagnostic_organisms`
---
-
 DROP TABLE IF EXISTS `diagnostic_organisms`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -594,11 +721,6 @@ CREATE TABLE `diagnostic_organisms` (
   CONSTRAINT `fk_do_study` FOREIGN KEY (`study_id`) REFERENCES `diagnostic_studies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `diagnostic_report_versions`
---
-
 DROP TABLE IF EXISTS `diagnostic_report_versions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -643,11 +765,6 @@ CREATE TABLE `diagnostic_report_versions` (
   CONSTRAINT `fk_drv_verifier` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `diagnostic_reports`
---
-
 DROP TABLE IF EXISTS `diagnostic_reports`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -686,11 +803,6 @@ CREATE TABLE `diagnostic_reports` (
   CONSTRAINT `fk_dr_verified_by` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `diagnostic_result_parameters`
---
-
 DROP TABLE IF EXISTS `diagnostic_result_parameters`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -719,11 +831,6 @@ CREATE TABLE `diagnostic_result_parameters` (
   CONSTRAINT `fk_drp_study` FOREIGN KEY (`study_id`) REFERENCES `diagnostic_studies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `diagnostic_sensitivities`
---
-
 DROP TABLE IF EXISTS `diagnostic_sensitivities`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -743,11 +850,6 @@ CREATE TABLE `diagnostic_sensitivities` (
   CONSTRAINT `fk_dsen_organism` FOREIGN KEY (`organism_id`) REFERENCES `diagnostic_organisms` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `diagnostic_studies`
---
-
 DROP TABLE IF EXISTS `diagnostic_studies`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -793,6 +895,10 @@ CREATE TABLE `diagnostic_studies` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `department_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_diagnostic_studies_code` (`study_code`),
   KEY `ix_ds_patient` (`patient_id`,`study_datetime`),
@@ -807,6 +913,14 @@ CREATE TABLE `diagnostic_studies` (
   KEY `fk_ds_finalized_by` (`finalized_by`),
   KEY `fk_ds_created_by` (`created_by`),
   KEY `ix_ds_patient_status_date` (`patient_id`,`status`,`study_datetime`),
+  KEY `idx_diagnostic_studies_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_diagnostic_studies_hospital` (`hospital_id`),
+  KEY `fk_diagnostic_studies_branch` (`branch_id`),
+  KEY `idx_diagnostic_studies_department` (`department_id`),
+  CONSTRAINT `fk_diagnostic_studies_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_diagnostic_studies_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_diagnostic_studies_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_diagnostic_studies_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `fk_ds_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_ds_finalized_by` FOREIGN KEY (`finalized_by`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_ds_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`),
@@ -817,11 +931,6 @@ CREATE TABLE `diagnostic_studies` (
   CONSTRAINT `fk_ds_verified_by` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `doctors`
---
-
 DROP TABLE IF EXISTS `doctors`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -843,20 +952,24 @@ CREATE TABLE `doctors` (
   `blood_group` varchar(10) DEFAULT NULL,
   `appointment_shifts` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`appointment_shifts`)),
   `appointment_charge_categories` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`appointment_charge_categories`)),
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `doctor_code` (`doctor_code`),
   UNIQUE KEY `user_id` (`user_id`),
   UNIQUE KEY `license_number` (`license_number`),
   KEY `doctors_department_id` (`department_id`),
+  KEY `idx_doctors_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_doctors_hospital` (`hospital_id`),
+  KEY `fk_doctors_branch` (`branch_id`),
   CONSTRAINT `doctors_ibfk_37` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `doctors_ibfk_38` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `doctors_ibfk_38` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_doctors_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_doctors_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_doctors_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `employees`
---
-
 DROP TABLE IF EXISTS `employees`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -880,20 +993,24 @@ CREATE TABLE `employees` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `employee_code` (`employee_code`),
   UNIQUE KEY `user_id` (`user_id`),
   KEY `employees_department_id` (`department_id`),
   KEY `employees_full_name` (`full_name`),
+  KEY `idx_employees_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_employees_hospital` (`hospital_id`),
+  KEY `fk_employees_branch` (`branch_id`),
   CONSTRAINT `employees_ibfk_37` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `employees_ibfk_38` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  CONSTRAINT `employees_ibfk_38` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_employees_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_employees_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_employees_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `expense_categories`
---
-
 DROP TABLE IF EXISTS `expense_categories`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -905,15 +1022,19 @@ CREATE TABLE `expense_categories` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`name`),
+  KEY `idx_expense_categories_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_expense_categories_hospital` (`hospital_id`),
+  KEY `fk_expense_categories_branch` (`branch_id`),
+  CONSTRAINT `fk_expense_categories_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_expense_categories_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_expense_categories_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `expenses`
---
-
 DROP TABLE IF EXISTS `expenses`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -931,17 +1052,51 @@ CREATE TABLE `expenses` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `expenses_category_id` (`category_id`),
   KEY `expenses_expense_date` (`expense_date`),
-  CONSTRAINT `expenses_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `expense_categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `idx_expenses_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_expenses_hospital` (`hospital_id`),
+  KEY `fk_expenses_branch` (`branch_id`),
+  CONSTRAINT `expenses_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `expense_categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_expenses_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_expenses_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_expenses_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `income_entries`
---
-
+DROP TABLE IF EXISTS `hospitals`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `hospitals` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `organization_id` bigint(20) unsigned NOT NULL,
+  `code` varchar(40) NOT NULL,
+  `name` varchar(180) NOT NULL,
+  `hospital_type` varchar(60) DEFAULT NULL,
+  `license_number` varchar(100) DEFAULT NULL,
+  `phone` varchar(30) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_hospitals_org_code` (`organization_id`,`code`),
+  KEY `idx_hospitals_org_name` (`organization_id`,`name`),
+  KEY `idx_hospitals_active` (`is_active`),
+  KEY `fk_hospitals_created_by` (`created_by`),
+  KEY `fk_hospitals_updated_by` (`updated_by`),
+  CONSTRAINT `fk_hospitals_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_hospitals_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_hospitals_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `income_entries`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -958,18 +1113,22 @@ CREATE TABLE `income_entries` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `income_entries_code` (`income_code`),
   KEY `income_entries_date` (`income_date`),
   KEY `income_entries_head` (`income_head_id`),
-  KEY `income_entries_account` (`account_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1504 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `income_entries_account` (`account_id`),
+  KEY `idx_income_entries_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_income_entries_hospital` (`hospital_id`),
+  KEY `fk_income_entries_branch` (`branch_id`),
+  CONSTRAINT `fk_income_entries_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_income_entries_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_income_entries_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1985 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `invoice_items`
---
-
 DROP TABLE IF EXISTS `invoice_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -978,6 +1137,9 @@ CREATE TABLE `invoice_items` (
   `invoice_id` bigint(20) unsigned NOT NULL,
   `item_type` enum('consultation','medicine','lab_test','radiology','bed','procedure','ambulance','other') NOT NULL DEFAULT 'other',
   `reference_id` bigint(20) unsigned DEFAULT NULL,
+  `service_id` bigint(20) unsigned DEFAULT NULL,
+  `service_price_id` bigint(20) unsigned DEFAULT NULL,
+  `pricing_snapshot` longtext DEFAULT NULL,
   `description` varchar(255) NOT NULL,
   `quantity` decimal(10,2) NOT NULL DEFAULT 1.00,
   `unit_price` decimal(12,2) NOT NULL DEFAULT 0.00,
@@ -987,14 +1149,13 @@ CREATE TABLE `invoice_items` (
   PRIMARY KEY (`id`),
   KEY `invoice_items_invoice_id` (`invoice_id`),
   KEY `invoice_items_item_type` (`item_type`),
+  KEY `idx_invoice_items_service` (`service_id`),
+  KEY `idx_invoice_items_service_price` (`service_price_id`),
+  CONSTRAINT `fk_invoice_items_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_invoice_items_service_price` FOREIGN KEY (`service_price_id`) REFERENCES `service_prices` (`id`) ON DELETE SET NULL,
   CONSTRAINT `invoice_items_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1103 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1230 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `invoices`
---
-
 DROP TABLE IF EXISTS `invoices`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1024,6 +1185,10 @@ CREATE TABLE `invoices` (
   `ambulance_trip_id` bigint(20) unsigned DEFAULT NULL,
   `paid_amount_before_reconciliation` decimal(12,2) DEFAULT NULL,
   `status_before_reconciliation` varchar(30) DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `department_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `invoice_code` (`invoice_code`),
   KEY `invoices_patient_id` (`patient_id`),
@@ -1036,6 +1201,14 @@ CREATE TABLE `invoices` (
   KEY `invoices_radiology_order_id` (`radiology_order_id`),
   KEY `invoices_blood_issue_id` (`blood_issue_id`),
   KEY `invoices_ambulance_trip_id` (`ambulance_trip_id`),
+  KEY `idx_invoices_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_invoices_hospital` (`hospital_id`),
+  KEY `fk_invoices_branch` (`branch_id`),
+  KEY `idx_invoices_department` (`department_id`),
+  CONSTRAINT `fk_invoices_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_invoices_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_invoices_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_invoices_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `invoices_admission_fk` FOREIGN KEY (`admission_id`) REFERENCES `admissions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `invoices_ambulance_trip_fk` FOREIGN KEY (`ambulance_trip_id`) REFERENCES `ambulance_trips` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `invoices_blood_issue_fk` FOREIGN KEY (`blood_issue_id`) REFERENCES `blood_issues` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -1044,13 +1217,8 @@ CREATE TABLE `invoices` (
   CONSTRAINT `invoices_lab_order_fk` FOREIGN KEY (`lab_order_id`) REFERENCES `lab_orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `invoices_opd_visit_fk` FOREIGN KEY (`opd_visit_id`) REFERENCES `opd_visits` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `invoices_radiology_order_fk` FOREIGN KEY (`radiology_order_id`) REFERENCES `radiology_orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1459 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1578 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `lab_order_items`
---
-
 DROP TABLE IF EXISTS `lab_order_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1072,13 +1240,8 @@ CREATE TABLE `lab_order_items` (
   KEY `lab_order_items_test_id` (`test_id`),
   CONSTRAINT `lab_order_items_ibfk_37` FOREIGN KEY (`order_id`) REFERENCES `lab_orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `lab_order_items_ibfk_38` FOREIGN KEY (`test_id`) REFERENCES `lab_tests` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=253 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=301 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `lab_orders`
---
-
 DROP TABLE IF EXISTS `lab_orders`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1095,20 +1258,27 @@ CREATE TABLE `lab_orders` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `department_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `order_code` (`order_code`),
   KEY `lab_orders_patient_id` (`patient_id`),
   KEY `lab_orders_doctor_id` (`doctor_id`),
   KEY `lab_orders_status` (`status`),
+  KEY `idx_lab_orders_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_lab_orders_hospital` (`hospital_id`),
+  KEY `fk_lab_orders_branch` (`branch_id`),
+  KEY `idx_lab_orders_department` (`department_id`),
+  CONSTRAINT `fk_lab_orders_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_lab_orders_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_lab_orders_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_lab_orders_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `lab_orders_ibfk_37` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `lab_orders_ibfk_38` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=155 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=187 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `lab_tests`
---
-
 DROP TABLE IF EXISTS `lab_tests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1135,16 +1305,20 @@ CREATE TABLE `lab_tests` (
   `method_backup` varchar(255) DEFAULT NULL,
   `normal_range_backup` varchar(255) DEFAULT NULL,
   `sample_type_backup` varchar(255) DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`code`),
-  KEY `lab_tests_category` (`category`)
-) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `lab_tests_category` (`category`),
+  KEY `idx_lab_tests_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_lab_tests_hospital` (`hospital_id`),
+  KEY `fk_lab_tests_branch` (`branch_id`),
+  CONSTRAINT `fk_lab_tests_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_lab_tests_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_lab_tests_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `master_options`
---
-
 DROP TABLE IF EXISTS `master_options`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1162,13 +1336,8 @@ CREATE TABLE `master_options` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `master_options_type_code` (`type`,`code`),
   KEY `master_options_type` (`type`)
-) ENGINE=InnoDB AUTO_INCREMENT=307 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=351 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `medicine_batches`
---
-
 DROP TABLE IF EXISTS `medicine_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1185,17 +1354,21 @@ CREATE TABLE `medicine_batches` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `medicine_batches_medicine_batch` (`medicine_id`,`batch_no`),
   KEY `medicine_batches_expiry` (`expiry_date`),
+  KEY `idx_medicine_batches_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_medicine_batches_hospital` (`hospital_id`),
+  KEY `fk_medicine_batches_branch` (`branch_id`),
+  CONSTRAINT `fk_medicine_batches_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_medicine_batches_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_medicine_batches_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `medicine_batches_medicine_fk` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=317 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=397 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `medicine_sale_item_batches`
---
-
 DROP TABLE IF EXISTS `medicine_sale_item_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1211,13 +1384,8 @@ CREATE TABLE `medicine_sale_item_batches` (
   KEY `msib_batch` (`batch_id`),
   CONSTRAINT `msib_batch_fk` FOREIGN KEY (`batch_id`) REFERENCES `medicine_batches` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `msib_sale_item_fk` FOREIGN KEY (`sale_item_id`) REFERENCES `medicine_sale_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=169 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=201 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `medicine_sale_items`
---
-
 DROP TABLE IF EXISTS `medicine_sale_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1235,13 +1403,8 @@ CREATE TABLE `medicine_sale_items` (
   KEY `medicine_sale_items_medicine_id` (`medicine_id`),
   CONSTRAINT `medicine_sale_items_ibfk_37` FOREIGN KEY (`sale_id`) REFERENCES `medicine_sales` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `medicine_sale_items_ibfk_38` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=137 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=153 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `medicine_sales`
---
-
 DROP TABLE IF EXISTS `medicine_sales`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1261,22 +1424,26 @@ CREATE TABLE `medicine_sales` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `sale_code` (`sale_code`),
   KEY `medicine_sales_patient_id` (`patient_id`),
   KEY `medicine_sales_sold_at` (`sold_at`),
   KEY `prescription_id` (`prescription_id`),
   KEY `sold_by` (`sold_by`),
+  KEY `idx_medicine_sales_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_medicine_sales_hospital` (`hospital_id`),
+  KEY `fk_medicine_sales_branch` (`branch_id`),
+  CONSTRAINT `fk_medicine_sales_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_medicine_sales_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_medicine_sales_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `medicine_sales_ibfk_55` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `medicine_sales_ibfk_56` FOREIGN KEY (`prescription_id`) REFERENCES `prescriptions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `medicine_sales_ibfk_57` FOREIGN KEY (`sold_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=128 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=144 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `medicines`
---
-
 DROP TABLE IF EXISTS `medicines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1305,17 +1472,21 @@ CREATE TABLE `medicines` (
   `tax` varchar(50) DEFAULT NULL,
   `tax_type` varchar(50) DEFAULT NULL,
   `description` text DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`code`),
   KEY `medicines_name` (`name`),
-  KEY `medicines_category` (`category`)
-) ENGINE=InnoDB AUTO_INCREMENT=183 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `medicines_category` (`category`),
+  KEY `idx_medicines_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_medicines_hospital` (`hospital_id`),
+  KEY `fk_medicines_branch` (`branch_id`),
+  CONSTRAINT `fk_medicines_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_medicines_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_medicines_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=231 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `opd_visits`
---
-
 DROP TABLE IF EXISTS `opd_visits`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1339,6 +1510,9 @@ CREATE TABLE `opd_visits` (
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
   `advice_migration_backup` text DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `visit_code` (`visit_code`),
   KEY `opd_visits_patient_id` (`patient_id`),
@@ -1347,17 +1521,45 @@ CREATE TABLE `opd_visits` (
   KEY `opd_visits_status` (`status`),
   KEY `department_id` (`department_id`),
   KEY `appointment_id` (`appointment_id`),
+  KEY `idx_opd_visits_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_opd_visits_hospital` (`hospital_id`),
+  KEY `fk_opd_visits_branch` (`branch_id`),
+  CONSTRAINT `fk_opd_visits_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_opd_visits_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_opd_visits_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `opd_visits_ibfk_73` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `opd_visits_ibfk_74` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `opd_visits_ibfk_75` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `opd_visits_ibfk_76` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1179 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1188 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `pathology_parameters`
---
-
+DROP TABLE IF EXISTS `organizations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `organizations` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `code` varchar(40) NOT NULL,
+  `name` varchar(180) NOT NULL,
+  `legal_name` varchar(220) DEFAULT NULL,
+  `registration_number` varchar(100) DEFAULT NULL,
+  `timezone` varchar(60) NOT NULL DEFAULT 'Asia/Dhaka',
+  `currency_code` varchar(3) NOT NULL DEFAULT 'BDT',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_organizations_code` (`code`),
+  KEY `idx_organizations_name` (`name`),
+  KEY `idx_organizations_active` (`is_active`),
+  KEY `fk_organizations_created_by` (`created_by`),
+  KEY `fk_organizations_updated_by` (`updated_by`),
+  CONSTRAINT `fk_organizations_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_organizations_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `pathology_parameters`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1376,11 +1578,107 @@ CREATE TABLE `pathology_parameters` (
   CONSTRAINT `pathology_parameters_ibfk_1` FOREIGN KEY (`unit_option_id`) REFERENCES `master_options` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `patients`
---
-
+DROP TABLE IF EXISTS `patient_allergies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `patient_allergies` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_id` bigint(20) unsigned NOT NULL,
+  `allergen` varchar(180) NOT NULL,
+  `reaction` varchar(255) DEFAULT NULL,
+  `severity` enum('mild','moderate','severe','life_threatening','unknown') NOT NULL DEFAULT 'unknown',
+  `status` enum('active','inactive','resolved') NOT NULL DEFAULT 'active',
+  `onset_date` date DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `recorded_by` bigint(20) unsigned DEFAULT NULL,
+  `verified_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_patient_allergies_patient_status` (`patient_id`,`status`),
+  KEY `idx_patient_allergies_allergen` (`allergen`),
+  KEY `fk_patient_allergies_recorded_by` (`recorded_by`),
+  KEY `fk_patient_allergies_verified_by` (`verified_by`),
+  KEY `idx_patient_allergies_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_patient_allergies_hospital` (`hospital_id`),
+  KEY `fk_patient_allergies_branch` (`branch_id`),
+  CONSTRAINT `fk_patient_allergies_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_patient_allergies_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_patient_allergies_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_patient_allergies_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`),
+  CONSTRAINT `fk_patient_allergies_recorded_by` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_patient_allergies_verified_by` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `patient_histories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `patient_histories` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_id` bigint(20) unsigned NOT NULL,
+  `category` enum('medical','surgical','family','immunization','previous_treatment') NOT NULL,
+  `title` varchar(220) NOT NULL,
+  `details` text DEFAULT NULL,
+  `occurred_on` date DEFAULT NULL,
+  `recorded_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_patient_histories_patient_category` (`patient_id`,`category`),
+  KEY `idx_patient_histories_date` (`occurred_on`),
+  KEY `fk_patient_histories_recorded_by` (`recorded_by`),
+  KEY `idx_patient_histories_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_patient_histories_hospital` (`hospital_id`),
+  KEY `fk_patient_histories_branch` (`branch_id`),
+  CONSTRAINT `fk_patient_histories_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_patient_histories_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_patient_histories_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_patient_histories_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`),
+  CONSTRAINT `fk_patient_histories_recorded_by` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `patient_problems`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `patient_problems` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_id` bigint(20) unsigned NOT NULL,
+  `code` varchar(30) DEFAULT NULL,
+  `title` varchar(220) NOT NULL,
+  `problem_type` enum('diagnosis','chronic_disease','symptom','risk') NOT NULL DEFAULT 'diagnosis',
+  `status` enum('active','resolved','inactive') NOT NULL DEFAULT 'active',
+  `onset_date` date DEFAULT NULL,
+  `resolved_date` date DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `recorded_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_patient_problems_patient_status` (`patient_id`,`status`),
+  KEY `idx_patient_problems_code` (`code`),
+  KEY `fk_patient_problems_recorded_by` (`recorded_by`),
+  KEY `idx_patient_problems_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_patient_problems_hospital` (`hospital_id`),
+  KEY `fk_patient_problems_branch` (`branch_id`),
+  CONSTRAINT `fk_patient_problems_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_patient_problems_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_patient_problems_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_patient_problems_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`),
+  CONSTRAINT `fk_patient_problems_recorded_by` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `patients`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1407,21 +1705,25 @@ CREATE TABLE `patients` (
   `deleted_at` datetime DEFAULT NULL,
   `created_by` bigint(20) unsigned DEFAULT NULL,
   `age` int(10) unsigned DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `patient_code` (`patient_code`),
   KEY `patients_full_name` (`full_name`),
   KEY `patients_phone` (`phone`),
   KEY `patients_created_by_foreign_idx` (`created_by`),
   KEY `user_id` (`user_id`),
+  KEY `idx_patients_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_patients_hospital` (`hospital_id`),
+  KEY `fk_patients_branch` (`branch_id`),
+  CONSTRAINT `fk_patients_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_patients_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_patients_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `patients_created_by_foreign_idx` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `patients_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=107 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=141 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `payments`
---
-
 DROP TABLE IF EXISTS `payments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1438,20 +1740,24 @@ CREATE TABLE `payments` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `payment_code` (`payment_code`),
   KEY `payments_invoice_id` (`invoice_id`),
   KEY `payments_paid_at` (`paid_at`),
   KEY `received_by` (`received_by`),
+  KEY `idx_payments_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_payments_hospital` (`hospital_id`),
+  KEY `fk_payments_branch` (`branch_id`),
+  CONSTRAINT `fk_payments_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_payments_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_payments_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `payments_ibfk_37` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `payments_ibfk_38` FOREIGN KEY (`received_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1798 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1882 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `payrolls`
---
-
 DROP TABLE IF EXISTS `payrolls`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1475,18 +1781,22 @@ CREATE TABLE `payrolls` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `payroll_code` (`payroll_code`),
   UNIQUE KEY `payrolls_employee_id_period_year_period_month` (`employee_id`,`period_year`,`period_month`),
   KEY `payrolls_status` (`status`),
+  KEY `idx_payrolls_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_payrolls_hospital` (`hospital_id`),
+  KEY `fk_payrolls_branch` (`branch_id`),
+  CONSTRAINT `fk_payrolls_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_payrolls_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_payrolls_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `payrolls_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `prescription_items`
---
-
 DROP TABLE IF EXISTS `prescription_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1509,11 +1819,6 @@ CREATE TABLE `prescription_items` (
   CONSTRAINT `prescription_items_ibfk_38` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `prescriptions`
---
-
 DROP TABLE IF EXISTS `prescriptions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1530,22 +1835,79 @@ CREATE TABLE `prescriptions` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `prescription_code` (`prescription_code`),
   KEY `prescriptions_patient_id` (`patient_id`),
   KEY `prescriptions_doctor_id` (`doctor_id`),
   KEY `prescriptions_status` (`status`),
   KEY `appointment_id` (`appointment_id`),
+  KEY `idx_prescriptions_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_prescriptions_hospital` (`hospital_id`),
+  KEY `fk_prescriptions_branch` (`branch_id`),
+  CONSTRAINT `fk_prescriptions_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_prescriptions_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_prescriptions_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `prescriptions_ibfk_55` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `prescriptions_ibfk_56` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `prescriptions_ibfk_57` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `radiology_orders`
---
-
+DROP TABLE IF EXISTS `pricing_rules`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `pricing_rules` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `organization_id` bigint(20) unsigned NOT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `service_id` bigint(20) unsigned DEFAULT NULL,
+  `service_category_id` bigint(20) unsigned DEFAULT NULL,
+  `code` varchar(80) NOT NULL,
+  `name` varchar(180) NOT NULL,
+  `rule_type` enum('percentage_discount','flat_discount','surcharge','tax_override') NOT NULL,
+  `value` decimal(14,4) NOT NULL,
+  `payer_type` enum('self','corporate','insurance','government','all') NOT NULL DEFAULT 'all',
+  `payer_reference` varchar(120) DEFAULT NULL,
+  `conditions_json` longtext DEFAULT NULL,
+  `priority` int(11) NOT NULL DEFAULT 100,
+  `effective_from` date NOT NULL,
+  `effective_to` date DEFAULT NULL,
+  `status` enum('draft','pending','approved','rejected','retired') NOT NULL DEFAULT 'draft',
+  `approval_request_id` bigint(20) unsigned DEFAULT NULL,
+  `approved_by` bigint(20) unsigned DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `rejection_reason` varchar(500) DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_pricing_rules_org_code` (`organization_id`,`code`),
+  KEY `idx_pricing_rules_resolution` (`service_id`,`service_category_id`,`status`,`effective_from`,`effective_to`),
+  KEY `idx_pricing_rules_scope` (`organization_id`,`hospital_id`,`branch_id`,`payer_type`),
+  KEY `fk_pricing_rules_hospital` (`hospital_id`),
+  KEY `fk_pricing_rules_branch` (`branch_id`),
+  KEY `fk_pricing_rules_category` (`service_category_id`),
+  KEY `fk_pricing_rules_approval` (`approval_request_id`),
+  KEY `fk_pricing_rules_approved_by` (`approved_by`),
+  KEY `fk_pricing_rules_created_by` (`created_by`),
+  KEY `fk_pricing_rules_updated_by` (`updated_by`),
+  CONSTRAINT `fk_pricing_rules_approval` FOREIGN KEY (`approval_request_id`) REFERENCES `approval_requests` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pricing_rules_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pricing_rules_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pricing_rules_category` FOREIGN KEY (`service_category_id`) REFERENCES `service_categories` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pricing_rules_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pricing_rules_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pricing_rules_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_pricing_rules_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pricing_rules_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ck_pricing_rules_dates` CHECK (`effective_to` is null or `effective_to` >= `effective_from`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `radiology_orders`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1571,22 +1933,29 @@ CREATE TABLE `radiology_orders` (
   `impression` text DEFAULT NULL,
   `verified_by` bigint(20) unsigned DEFAULT NULL,
   `verified_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `department_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `order_code` (`order_code`),
   KEY `radiology_orders_patient_id` (`patient_id`),
   KEY `radiology_orders_test_id` (`test_id`),
   KEY `radiology_orders_status` (`status`),
   KEY `doctor_id` (`doctor_id`),
+  KEY `idx_radiology_orders_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_radiology_orders_hospital` (`hospital_id`),
+  KEY `fk_radiology_orders_branch` (`branch_id`),
+  KEY `idx_radiology_orders_department` (`department_id`),
+  CONSTRAINT `fk_radiology_orders_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_radiology_orders_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_radiology_orders_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_radiology_orders_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `radiology_orders_ibfk_55` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `radiology_orders_ibfk_56` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `radiology_orders_ibfk_57` FOREIGN KEY (`test_id`) REFERENCES `radiology_tests` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=86 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `radiology_parameters`
---
-
 DROP TABLE IF EXISTS `radiology_parameters`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1605,11 +1974,6 @@ CREATE TABLE `radiology_parameters` (
   CONSTRAINT `radiology_parameters_ibfk_1` FOREIGN KEY (`unit_option_id`) REFERENCES `master_options` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `radiology_tests`
---
-
 DROP TABLE IF EXISTS `radiology_tests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1631,16 +1995,20 @@ CREATE TABLE `radiology_tests` (
   `base_charge` decimal(12,2) DEFAULT 0.00,
   `final_charge` decimal(12,2) DEFAULT 0.00,
   `tax_rate` decimal(5,2) DEFAULT 0.00,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`code`),
-  KEY `radiology_tests_category` (`category`)
+  KEY `radiology_tests_category` (`category`),
+  KEY `idx_radiology_tests_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_radiology_tests_hospital` (`hospital_id`),
+  KEY `fk_radiology_tests_branch` (`branch_id`),
+  CONSTRAINT `fk_radiology_tests_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_radiology_tests_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_radiology_tests_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `referrals`
---
-
 DROP TABLE IF EXISTS `referrals`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1660,22 +2028,26 @@ CREATE TABLE `referrals` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `referral_code` (`referral_code`),
   KEY `referrals_patient_id` (`patient_id`),
   KEY `referrals_from_doctor_id` (`from_doctor_id`),
   KEY `referrals_to_doctor_id` (`to_doctor_id`),
   KEY `referrals_status` (`status`),
+  KEY `idx_referrals_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_referrals_hospital` (`hospital_id`),
+  KEY `fk_referrals_branch` (`branch_id`),
+  CONSTRAINT `fk_referrals_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_referrals_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_referrals_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
   CONSTRAINT `referrals_ibfk_55` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `referrals_ibfk_56` FOREIGN KEY (`from_doctor_id`) REFERENCES `doctors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `referrals_ibfk_57` FOREIGN KEY (`to_doctor_id`) REFERENCES `doctors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `refresh_tokens`
---
-
 DROP TABLE IF EXISTS `refresh_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1690,13 +2062,8 @@ CREATE TABLE `refresh_tokens` (
   UNIQUE KEY `token_hash` (`token_hash`),
   KEY `refresh_tokens_user_id` (`user_id`),
   CONSTRAINT `refresh_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1351 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1556 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `schema_migrations`
---
-
 DROP TABLE IF EXISTS `schema_migrations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1706,11 +2073,172 @@ CREATE TABLE `schema_migrations` (
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `settings`
---
-
+DROP TABLE IF EXISTS `service_categories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `service_categories` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `organization_id` bigint(20) unsigned NOT NULL,
+  `service_type_id` bigint(20) unsigned NOT NULL,
+  `code` varchar(60) NOT NULL,
+  `name` varchar(180) NOT NULL,
+  `description` text DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_service_categories_org_code` (`organization_id`,`code`),
+  KEY `idx_service_categories_type` (`service_type_id`,`is_active`),
+  KEY `fk_service_categories_created_by` (`created_by`),
+  KEY `fk_service_categories_updated_by` (`updated_by`),
+  CONSTRAINT `fk_service_categories_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_service_categories_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_service_categories_type` FOREIGN KEY (`service_type_id`) REFERENCES `service_types` (`id`),
+  CONSTRAINT `fk_service_categories_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `service_prices`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `service_prices` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `service_id` bigint(20) unsigned NOT NULL,
+  `organization_id` bigint(20) unsigned NOT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `payer_type` enum('self','corporate','insurance','government','all') NOT NULL DEFAULT 'self',
+  `payer_reference` varchar(120) DEFAULT NULL,
+  `currency_code` char(3) NOT NULL DEFAULT 'BDT',
+  `amount` decimal(14,2) NOT NULL,
+  `tax_rate` decimal(7,4) NOT NULL DEFAULT 0.0000,
+  `effective_from` date NOT NULL,
+  `effective_to` date DEFAULT NULL,
+  `version_no` int(10) unsigned NOT NULL DEFAULT 1,
+  `status` enum('draft','pending','approved','rejected','retired') NOT NULL DEFAULT 'draft',
+  `approval_request_id` bigint(20) unsigned DEFAULT NULL,
+  `approved_by` bigint(20) unsigned DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `rejection_reason` varchar(500) DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  `hospital_scope_key` bigint(20) unsigned GENERATED ALWAYS AS (coalesce(`hospital_id`,0)) STORED,
+  `branch_scope_key` bigint(20) unsigned GENERATED ALWAYS AS (coalesce(`branch_id`,0)) STORED,
+  `payer_reference_key` varchar(120) GENERATED ALWAYS AS (coalesce(`payer_reference`,'')) STORED,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_service_prices_version` (`service_id`,`organization_id`,`hospital_scope_key`,`branch_scope_key`,`payer_type`,`payer_reference_key`,`version_no`),
+  KEY `idx_service_prices_resolution` (`service_id`,`status`,`effective_from`,`effective_to`),
+  KEY `idx_service_prices_scope` (`organization_id`,`hospital_id`,`branch_id`,`payer_type`),
+  KEY `fk_service_prices_hospital` (`hospital_id`),
+  KEY `fk_service_prices_branch` (`branch_id`),
+  KEY `fk_service_prices_approval` (`approval_request_id`),
+  KEY `fk_service_prices_approved_by` (`approved_by`),
+  KEY `fk_service_prices_created_by` (`created_by`),
+  KEY `fk_service_prices_updated_by` (`updated_by`),
+  CONSTRAINT `fk_service_prices_approval` FOREIGN KEY (`approval_request_id`) REFERENCES `approval_requests` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_service_prices_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_service_prices_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_service_prices_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_service_prices_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_service_prices_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_service_prices_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`),
+  CONSTRAINT `fk_service_prices_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ck_service_prices_nonnegative` CHECK (`amount` >= 0),
+  CONSTRAINT `ck_service_prices_dates` CHECK (`effective_to` is null or `effective_to` >= `effective_from`)
+) ENGINE=InnoDB AUTO_INCREMENT=235 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `service_source_links`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `service_source_links` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `organization_id` bigint(20) unsigned NOT NULL,
+  `service_id` bigint(20) unsigned NOT NULL,
+  `source_type` enum('doctor','lab_test','radiology_test','bed','ambulance','medicine','blood_bag','legacy_charge') NOT NULL,
+  `source_id` bigint(20) unsigned NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_service_source_link` (`organization_id`,`source_type`,`source_id`),
+  KEY `idx_service_source_service` (`service_id`),
+  CONSTRAINT `fk_service_source_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_service_source_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=204 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `service_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `service_types` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `organization_id` bigint(20) unsigned NOT NULL,
+  `code` varchar(50) NOT NULL,
+  `name` varchar(160) NOT NULL,
+  `description` text DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_service_types_org_code` (`organization_id`,`code`),
+  KEY `idx_service_types_org_active` (`organization_id`,`is_active`),
+  KEY `fk_service_types_created_by` (`created_by`),
+  KEY `fk_service_types_updated_by` (`updated_by`),
+  CONSTRAINT `fk_service_types_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_service_types_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_service_types_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `services`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `services` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `organization_id` bigint(20) unsigned NOT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `service_type_id` bigint(20) unsigned NOT NULL,
+  `service_category_id` bigint(20) unsigned DEFAULT NULL,
+  `code` varchar(80) NOT NULL,
+  `name` varchar(220) NOT NULL,
+  `description` text DEFAULT NULL,
+  `billing_unit` varchar(40) NOT NULL DEFAULT 'unit',
+  `requires_approval` tinyint(1) NOT NULL DEFAULT 0,
+  `is_taxable` tinyint(1) NOT NULL DEFAULT 0,
+  `default_duration_minutes` int(10) unsigned DEFAULT NULL,
+  `status` enum('draft','active','inactive','retired') NOT NULL DEFAULT 'active',
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_services_org_code` (`organization_id`,`code`),
+  KEY `idx_services_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `idx_services_type_category` (`service_type_id`,`service_category_id`),
+  KEY `idx_services_name_status` (`name`,`status`),
+  KEY `fk_services_hospital` (`hospital_id`),
+  KEY `fk_services_branch` (`branch_id`),
+  KEY `fk_services_category` (`service_category_id`),
+  KEY `fk_services_created_by` (`created_by`),
+  KEY `fk_services_updated_by` (`updated_by`),
+  CONSTRAINT `fk_services_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_services_category` FOREIGN KEY (`service_category_id`) REFERENCES `service_categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_services_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_services_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_services_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_services_type` FOREIGN KEY (`service_type_id`) REFERENCES `service_types` (`id`),
+  CONSTRAINT `fk_services_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=209 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `settings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1729,11 +2257,6 @@ CREATE TABLE `settings` (
   KEY `settings_is_public` (`is_public`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `users`
---
-
 DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1742,7 +2265,10 @@ CREATE TABLE `users` (
   `email` varchar(150) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `full_name` varchar(150) NOT NULL,
-  `role` enum('admin','doctor','nurse','receptionist','accountant','pharmacist','lab_tech','patient') NOT NULL DEFAULT 'receptionist',
+  `role` enum('super_admin','admin','hospital_admin','branch_admin','ceo','management','doctor','nurse','receptionist','cashier','accountant','finance_manager','pharmacist','lab_tech','pathologist','radiologist','ot_staff','anesthetist','icu_staff','blood_bank_staff','procurement_officer','store_manager','hr_manager','housekeeping','dietician','ambulance_staff','insurance_officer','patient') NOT NULL DEFAULT 'receptionist',
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   `phone` varchar(30) DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `last_login_at` datetime DEFAULT NULL,
@@ -1751,16 +2277,61 @@ CREATE TABLE `users` (
   `deleted_at` datetime DEFAULT NULL,
   `must_change_password` tinyint(1) NOT NULL DEFAULT 0,
   `password_changed_at` datetime DEFAULT NULL,
+  `department_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
-  KEY `users_role` (`role`)
-) ENGINE=InnoDB AUTO_INCREMENT=574 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `users_role` (`role`),
+  KEY `idx_users_organization` (`organization_id`),
+  KEY `idx_users_hospital` (`hospital_id`),
+  KEY `idx_users_branch` (`branch_id`),
+  KEY `idx_users_department` (`department_id`),
+  CONSTRAINT `fk_users_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_users_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_users_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_users_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=669 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `wards`
---
-
+DROP TABLE IF EXISTS `vital_signs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `vital_signs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `patient_id` bigint(20) unsigned NOT NULL,
+  `encounter_type` varchar(30) DEFAULT NULL,
+  `encounter_id` bigint(20) unsigned DEFAULT NULL,
+  `captured_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `temperature_c` decimal(4,1) DEFAULT NULL,
+  `pulse_bpm` smallint(5) unsigned DEFAULT NULL,
+  `respiratory_rate` smallint(5) unsigned DEFAULT NULL,
+  `systolic_bp` smallint(5) unsigned DEFAULT NULL,
+  `diastolic_bp` smallint(5) unsigned DEFAULT NULL,
+  `spo2_percent` decimal(5,2) DEFAULT NULL,
+  `height_cm` decimal(6,2) DEFAULT NULL,
+  `weight_kg` decimal(7,2) DEFAULT NULL,
+  `bmi` decimal(5,2) DEFAULT NULL,
+  `pain_score` tinyint(3) unsigned DEFAULT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `recorded_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_vitals_patient_time` (`patient_id`,`captured_at`),
+  KEY `idx_vitals_encounter` (`encounter_type`,`encounter_id`),
+  KEY `fk_vitals_recorded_by` (`recorded_by`),
+  KEY `idx_vital_signs_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_vital_signs_hospital` (`hospital_id`),
+  KEY `fk_vital_signs_branch` (`branch_id`),
+  CONSTRAINT `fk_vital_signs_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_vital_signs_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_vital_signs_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_vitals_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`),
+  CONSTRAINT `fk_vitals_recorded_by` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `wards`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -1777,22 +2348,84 @@ CREATE TABLE `wards` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   `deleted_at` datetime DEFAULT NULL,
+  `organization_id` bigint(20) unsigned DEFAULT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`),
   UNIQUE KEY `code` (`code`),
   KEY `wards_type` (`type`),
   KEY `idx_wards_building` (`building_id`),
-  KEY `idx_wards_floor` (`floor_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `idx_wards_floor` (`floor_id`),
+  KEY `idx_wards_scope` (`organization_id`,`hospital_id`,`branch_id`),
+  KEY `fk_wards_hospital` (`hospital_id`),
+  KEY `fk_wards_branch` (`branch_id`),
+  CONSTRAINT `fk_wards_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_wards_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_wards_organization` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping events for database 'hospital_management'
---
-
---
--- Dumping routines for database 'hospital_management'
---
+DROP TABLE IF EXISTS `workflow_definitions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `workflow_definitions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `organization_id` bigint(20) unsigned NOT NULL,
+  `hospital_id` bigint(20) unsigned DEFAULT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `code` varchar(60) NOT NULL,
+  `name` varchar(180) NOT NULL,
+  `workflow_type` varchar(60) NOT NULL,
+  `entity_type` varchar(80) NOT NULL,
+  `description` text DEFAULT NULL,
+  `min_amount` decimal(14,2) DEFAULT NULL,
+  `max_amount` decimal(14,2) DEFAULT NULL,
+  `currency_code` char(3) NOT NULL DEFAULT 'BDT',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_workflow_definition_org_code` (`organization_id`,`code`),
+  KEY `idx_workflow_type_active` (`workflow_type`,`is_active`),
+  KEY `idx_workflow_hospital` (`hospital_id`),
+  KEY `idx_workflow_branch` (`branch_id`),
+  KEY `fk_workflow_created_by` (`created_by`),
+  KEY `fk_workflow_updated_by` (`updated_by`),
+  CONSTRAINT `fk_workflow_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`),
+  CONSTRAINT `fk_workflow_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_workflow_hospital` FOREIGN KEY (`hospital_id`) REFERENCES `hospitals` (`id`),
+  CONSTRAINT `fk_workflow_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`),
+  CONSTRAINT `fk_workflow_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ck_workflow_amount_range` CHECK (`min_amount` is null or `max_amount` is null or `min_amount` <= `max_amount`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `workflow_steps`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `workflow_steps` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `workflow_definition_id` bigint(20) unsigned NOT NULL,
+  `step_order` smallint(5) unsigned NOT NULL,
+  `name` varchar(160) NOT NULL,
+  `approver_role` varchar(60) DEFAULT NULL,
+  `approver_user_id` bigint(20) unsigned DEFAULT NULL,
+  `min_approvals` smallint(5) unsigned NOT NULL DEFAULT 1,
+  `can_reject` tinyint(1) NOT NULL DEFAULT 1,
+  `due_hours` int(10) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_workflow_step_order` (`workflow_definition_id`,`step_order`),
+  KEY `idx_workflow_step_role` (`approver_role`),
+  KEY `idx_workflow_step_user` (`approver_user_id`),
+  CONSTRAINT `fk_workflow_step_definition` FOREIGN KEY (`workflow_definition_id`) REFERENCES `workflow_definitions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_workflow_step_user` FOREIGN KEY (`approver_user_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `ck_workflow_step_approver` CHECK (`approver_role` is not null or `approver_user_id` is not null)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -1802,5 +2435,3 @@ CREATE TABLE `wards` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2026-09-24 12:59:48

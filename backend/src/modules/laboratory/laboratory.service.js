@@ -111,8 +111,8 @@ const getOrderReport = async (id) => {
   };
 };
 
-const createOrder = async (input, currentUserId) => {
-  return sequelize.transaction(async (t) => {
+const createOrder = async (input, currentUserId, options = {}) => {
+  const work = async (t) => {
     const patient = await Patient.findByPk(input.patient_id, { transaction: t });
     if (!patient) throw ApiError.badRequest('Patient not found');
     // BUG-036 — an unknown doctor used to be silently discarded, losing the
@@ -150,6 +150,7 @@ const createOrder = async (input, currentUserId) => {
           order_code,
           patient_id: input.patient_id,
           doctor_id: input.doctor_id || null,
+          emergency_encounter_id: input.emergency_encounter_id || null,
           ordered_at: input.ordered_at || new Date(),
           status: LAB_ORDER_STATUS.ORDERED,
           total,
@@ -172,10 +173,12 @@ const createOrder = async (input, currentUserId) => {
       models: { Invoice, InvoiceItem, Payment },
       transaction: t,
       patientId: input.patient_id,
-      link: { lab_order_id: order.id },
+      link: { lab_order_id: order.id, emergency_encounter_id: input.emergency_encounter_id || null },
       lines: rows.map((row, i) => ({
         item_type: 'lab_test',
         reference_id: row.test_id,
+        service_source_type: 'lab_test',
+        service_source_id: row.test_id,
         description: `Lab test - ${input.items[i]?.name || `#${row.test_id}`}`,
         quantity: 1,
         unit_price: row.price,
@@ -190,7 +193,8 @@ const createOrder = async (input, currentUserId) => {
     });
 
     return (await repository.findOrderById(order.id, { transaction: t })).toJSON();
-  });
+  };
+  return options.transaction ? work(options.transaction) : sequelize.transaction(work);
 };
 
 // BUG-037 — the lab order status had no state machine either: an order could be

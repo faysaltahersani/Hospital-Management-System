@@ -1,13 +1,33 @@
 'use strict';
 
 const ROLES = Object.freeze({
+  SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
+  HOSPITAL_ADMIN: 'hospital_admin',
+  BRANCH_ADMIN: 'branch_admin',
+  CEO: 'ceo',
+  MANAGEMENT: 'management',
   DOCTOR: 'doctor',
   NURSE: 'nurse',
   RECEPTIONIST: 'receptionist',
+  CASHIER: 'cashier',
   ACCOUNTANT: 'accountant',
+  FINANCE_MANAGER: 'finance_manager',
   PHARMACIST: 'pharmacist',
   LAB_TECH: 'lab_tech',
+  PATHOLOGIST: 'pathologist',
+  RADIOLOGIST: 'radiologist',
+  OT_STAFF: 'ot_staff',
+  ANESTHETIST: 'anesthetist',
+  ICU_STAFF: 'icu_staff',
+  BLOOD_BANK_STAFF: 'blood_bank_staff',
+  PROCUREMENT_OFFICER: 'procurement_officer',
+  STORE_MANAGER: 'store_manager',
+  HR_MANAGER: 'hr_manager',
+  HOUSEKEEPING: 'housekeeping',
+  DIETICIAN: 'dietician',
+  AMBULANCE_STAFF: 'ambulance_staff',
+  INSURANCE_OFFICER: 'insurance_officer',
   PATIENT: 'patient',
 });
 const ROLE_VALUES = Object.values(ROLES);
@@ -99,8 +119,21 @@ const RADIOLOGY_CATEGORIES = Object.freeze([
 ]);
 
 const WARD_TYPES = Object.freeze([
-  'general', 'private', 'semi_private', 'icu', 'hdu', 'maternity', 'pediatric', 'isolation',
+  'general', 'private', 'semi_private', 'icu', 'hdu', 'maternity', 'pediatric', 'isolation', 'emergency',
 ]);
+
+const EMERGENCY_STATUS = Object.freeze({
+  REGISTERED: 'registered',
+  TRIAGED: 'triaged',
+  UNDER_ASSESSMENT: 'under_assessment',
+  TREATMENT: 'treatment',
+  OBSERVATION: 'observation',
+  DISCHARGED: 'discharged',
+  ADMITTED: 'admitted',
+  TRANSFERRED: 'transferred',
+});
+const EMERGENCY_STATUS_VALUES = Object.values(EMERGENCY_STATUS);
+const TRIAGE_LEVELS = Object.freeze(['resuscitation', 'emergent', 'urgent', 'less_urgent', 'non_urgent']);
 
 const BED_STATUS = Object.freeze({
   AVAILABLE: 'available',
@@ -186,6 +219,7 @@ module.exports = {
   RADIOLOGY_ORDER_STATUS, RADIOLOGY_ORDER_STATUS_VALUES,
   RADIOLOGY_CATEGORIES,
   WARD_TYPES,
+  EMERGENCY_STATUS, EMERGENCY_STATUS_VALUES, TRIAGE_LEVELS,
   BED_STATUS, BED_STATUS_VALUES,
   ADMISSION_STATUS, ADMISSION_STATUS_VALUES,
   OPD_VISIT_STATUS, OPD_VISIT_STATUS_VALUES,

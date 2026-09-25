@@ -17,6 +17,7 @@ const { sequelize, Invoice, InvoiceItem, Payment, Patient, Expense, MedicineSale
 let server, base, token;
 const createdInvoiceIds = [];
 const createdVisitIds = [];
+const createdExpenseIds = [];
 
 const api = async (path, { method = 'GET', body } = {}) => {
   const res = await fetch(`${base}${config.apiPrefix}${path}`, {
@@ -42,6 +43,25 @@ test.before(async () => {
   const login = await api('/auth/login', { method: 'POST', body: { email: 'admin@hospital.local', password: 'HmsQaAdmin2026x' } });
   assert.equal(login.status, 200);
   token = login.body.data.accessToken;
+
+  // Keep the opening-balance assertions deterministic even when this suite is
+  // run against a fresh or recently cleaned database rather than the original
+  // July demo dataset.
+  const patient = await Patient.findOne({ where: { deleted_at: null } });
+  const openingInvoice = await Invoice.create({
+    invoice_code: `INV-QA-OPENING-${Date.now()}`,
+    patient_id: patient.id,
+    issued_at: new Date('2026-07-10T06:00:00Z'),
+    subtotal: 600,
+    total: 600,
+    paid_amount: 600,
+    status: 'paid',
+  });
+  createdInvoiceIds.push(openingInvoice.id);
+  await InvoiceItem.create({ invoice_id: openingInvoice.id, item_type: 'other', description: 'QA opening balance fixture', quantity: 1, unit_price: 600, total_price: 600 });
+  await Payment.create({ payment_code: `PAY-QA-OPENING-${Date.now()}`, invoice_id: openingInvoice.id, amount: 600, method: 'cash', paid_at: new Date('2026-07-10T06:05:00Z') });
+  const openingExpense = await Expense.create({ title: 'QA opening expense fixture', amount: 100, expense_date: '2026-07-11', payment_method: 'cash', reference: `QA-OPENING-${Date.now()}` });
+  createdExpenseIds.push(openingExpense.id);
 });
 
 test.after(async () => {
@@ -53,6 +73,7 @@ test.after(async () => {
   if (createdVisitIds.length) {
     await models.OpdVisit.destroy({ where: { id: createdVisitIds }, force: true });
   }
+  if (createdExpenseIds.length) await Expense.destroy({ where: { id: createdExpenseIds }, force: true });
   await new Promise((r) => server.close(r));
   await sequelize.close();
 });
